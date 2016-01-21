@@ -1,0 +1,65 @@
+.divider {
+    width:100%; 
+    background:#CCC; 
+    height:2px; 
+    margin:25px 0px;
+}
+.hideSub > ul {
+    display: none
+}
+
+.datePickerHost {
+    position: relative;
+    width: 4em
+}
+.datePicker {
+    background-color: #3F51B5;
+    position: absolute;
+    width: 18em;
+    padding-left: 1em;
+    padding-bottom: 1em;
+    top: 2em; 
+    left: 0em; 
+    z-index: 100;
+}
+.datePicker td {
+    width:3em;
+    text-align:center
+}
+.datePicker .nudgeContainer{
+    margin-top: 1em;
+    margin-right: 1em;
+    float: left;
+}
+.datePicker .nudger, .datePicker tbody td{
+    cursor: pointer; 
+    cursor: hand;
+}
+.datePicker .dpPrev, 
+.datePicker .dpNext{ 
+    background-color:#303F95;
+    color:white;
+    opacity:0.54;
+}
+.datePicker .year,
+.datePicker th{
+    color:white;
+    opacity:0.87;
+}
+.datePicker .dpCurr{
+    background-color:#C5CAE9;
+    opacity:0.87;
+}
+.datePicker td.today {
+    background-color:#FF4081;
+    font-weight:bold;
+}       
+
+form label {
+    display:block;
+}
+
+form select, 
+form input {
+    padding:4px;
+}

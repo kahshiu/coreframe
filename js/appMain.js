@@ -1,0 +1,490 @@
+/******** Validator ********/
+var Validator = Validator || {}
+Validator.isBoolean = function (obj) {
+    return Object.prototype.toString.call(obj) === "[object Boolean]";
+}
+Validator.isNumber = function (obj) {
+    return Object.prototype.toString.call(obj) === "[object Number]";
+}
+Validator.isString = function (obj) {
+    return Object.prototype.toString.call(obj) === "[object String]";
+}
+Validator.isUndefined = function (obj) {
+    return Object.prototype.toString.call(obj) === "[object Undefined]";
+}
+Validator.isNull = function (obj) {
+    return Object.prototype.toString.call(obj) === "[object Null]";
+}
+Validator.isFunction = function (obj) {
+    return Object.prototype.toString.call(obj) === "[object Function]";
+}
+Validator.isDate = function (obj) {
+    return Object.prototype.toString.call(obj) === "[object Date]";
+}
+Validator.isRegExp = function (obj) {
+    return Object.prototype.toString.call(obj) === "[object RegExp]";
+}
+Validator.isArray = function (obj) {
+    return Object.prototype.toString.call(obj) === "[object Array]";
+}
+Validator.isObject = function (obj) {
+    return Object.prototype.toString.call(obj) === "[object Object]";
+}
+Validator.isTextDateObj = function (obj){
+    //todo: validate text to date obj
+    return true
+}
+Validator.isCurrency = function (obj) {
+    var i 
+        ,obj = obj.toString()
+        ,result = false 
+        ,pattern = [ 
+            /^(?:(?:\d{1,3}(?:\,\d{3})*)|(?:\d+))(?:\.\d*)?$/
+            ,/(^0$)|^(?:0\.(?:\d*)|(?:\.\d*))$/
+        ]; 
+    for(i=0; i<pattern.length; i++){
+        if(result) break;
+        result = pattern[i].test(obj);
+    }
+    return result;
+}
+Validator.cleanCurrency = function (obj,decimal) {
+    var index, length, pre, post, decimal = decimal || 2, result = "";
+    if(Validator.isCurrency(obj)){
+        obj = parseFloat( obj.toString().replace(/\,/g,"") );              //normalise to int
+        obj = Math.round( obj.toFixed(decimal+4)*Math.pow(10,decimal) ); //truncate with percision of additional 4 decimal points
+        obj = obj.toString();
+
+        if(obj == "0") { pre = "0"; post="00" }
+        else {
+            pre = obj.slice(0,obj.length-2);
+            post = obj.slice(-2);
+            length = pre.length;
+            while(length>3) { length = length-3; pre = pre.slice(0,length) + "," + pre.slice(length); };
+        }
+        result =  pre + "." + post; 
+    }
+    return result;
+}
+Validator.Max = function () {
+    return true;
+}
+
+// generate functions to validate elements
+//generate obj with array of elements to hold result
+// validation object
+
+//Validator.
+//required
+//min
+//max
+//minlength
+//max
+//range no
+//range date
+//pattern
+//email
+//phone
+//number (without symbols?)
+//digits only
+//step
+//dependency on other fields
+//password complexity
+//unique constrain/ across fields
+
+
+
+/******** Utilities ********/
+var Util = Util || {}
+Util.dateDiff = function (datePart,startDate,endDate) {
+
+}
+Util.setRange = function (targetNum,minbase,maxbase){
+    var temp;
+    if(maxbase) temp = Math.min(targetNum,maxbase);
+    if(minbase) temp = Math.max(targetNum,minbase);
+    return temp;
+}
+Util.zeroPadding = function (targetNum,padCount,mode) {
+    var targetNum = targetNum.toString(), count = padCount, padding = "", mode = mode || "pre", result;
+    if(targetNum.length == padCount) return targetNum;
+    while(count>0){ padding = padding+"0"; count--; }
+    if(mode == "pre") {
+        result = (padding+targetNum).slice(-1*padCount);
+    } else {
+        result = (targetNum+padding).slice(0,padCount);
+    }
+    return result;
+}
+Util.getImposed = function (text,pattern,keys) {
+    var i,index,temp,result;
+    temp = {};
+    result = {};
+    for(i=0; i<keys.length; i++){
+        index = 0;
+        result[keys[i]] = [];
+        while (index>-1) {
+            temp.text = text.substring(index);
+            temp.pattern = pattern.substring(index);
+            index = temp.pattern.search(keys[i]);
+            if(index<0) break;
+            result[keys[i]].push( temp.text.slice(index,index+keys[i].length) );
+            index = index+keys[i].length; 
+            if(index>=temp.pattern.length) break;
+        }
+    }
+    return result;
+}
+Util.toDateText = function (dateObj,format) {
+    if(!Validator.isDate(dateObj)) return;
+    var dd = Util.zeroPadding(dateObj.getDate(),2)
+        ,mm = Util.zeroPadding(dateObj.getMonth()+1,2)
+        ,yy = Util.zeroPadding(dateObj.getFullYear(),2)
+        ,yyyy = Util.zeroPadding(dateObj.getFullYear(),4)
+        ,format = format || "dd/mm/yyyy";
+    return format.replace(/dd/g,dd).replace(/mm/g,mm).replace(/yyyy/g,yyyy).replace(/yy/g,yy);
+}
+Util.toDateObj = function (dateText,format) {
+    var year=""
+        ,format = format || "dd/mm/yyyy"
+        ,temp = Util.getImposed(dateText,format,["dd","mm","yyyy","yy"]);
+    if(temp.yyyy.length > 0) year=temp.yyyy[0];
+    else if(temp.yy.length > 0) year=temp.yy[0];
+    return new Date(year,temp.mm[0]-1,temp.dd[0]);
+}
+
+/******** Templater ********/
+var Templater = Templater || {};
+Templater.getPlaceholders = function (template,config) {
+    var config = config||{};
+    config.interpolation = config.interpolation||["{{","}}"];
+
+    var sumLength = config.interpolation.join("").length;
+    var placeholders = [];
+    var expressions = [];
+    var stopper1 = 0;
+    var stopper2 = 0;
+
+    while(template.length>0) {
+        stopper1 = template.search(config.interpolation[0]);
+        stopper2 = template.search(config.interpolation[1])+config.interpolation[1].length;
+
+        if(stopper1 == -1 || stopper2 == -2) break;;
+        if(stopper1>stopper2) throw "Imbalanced interpolation signs";
+
+        if( !(config.setting == 'strict' && stopper2-stopper1 == sumLength) ){
+            placeholders.push(template.slice(stopper1,stopper2))
+            expressions.push(
+                template.slice(
+                    stopper1+config.interpolation[0].length
+                    ,stopper2-config.interpolation[1].length
+                )
+            );
+        }
+        template = template.slice(stopper2);
+    }
+    return { brac:placeholders,expr:expressions };
+}
+
+Templater.compileTemplate = function (template,$data,$index,$parent,$root){
+    var i=0;
+    var j=0;
+    var hldr,frag="";
+    var expr,expr0,expr1,expr1curr,expr1fn,expr1param1,expr1param2,expr1param3,expr1param4,expr1param5;
+
+    //if(_.isArray($data)) {
+    if(Object.prototype.toString.call( $data ) === '[object Array]') {
+        //console.log($root)
+        for(j=0;j<$data.length;j++){
+            if($root === undefined) $root = $data;
+            frag = frag + Templater.compileTemplate(template,$data[j],j,$parent,$root);
+        }
+    }else{
+        hldr = Templater.getPlaceholders(template,{keys:true})
+        frag = template.slice(0)
+        $root = $root||$data
+        for(i=0;i<hldr.brac.length;i++){
+            expr = hldr.expr[i].split("|");
+            expr0 = expr[0];
+            expr1 = expr[1];
+
+// evaluate expression
+            val = (new Function(
+                "$data"
+                ,"$index"
+                ,"$parent"
+                ,"$root"
+                ,'var result={{expr}};if(result===undefined || result===null) {result=""}; return result'.replace("{{expr}}",expr0)
+            ))( $data,$index,$parent,$root );
+
+// evaluate fn on expression
+            if(expr1) {
+                expr1 = expr1.split(",")
+                for(m=0;m<expr1.length;m++){
+                    expr1fn = expr1[m];
+                    expr1param1 = val;
+                    expr1param2 = $data;
+                    expr1param3 = $index;
+                    expr1param4 = $parent;
+                    expr1param5 = $root;
+                    val = (new Function (
+                        "$val"
+                        ,"$data"
+                        ,"$index"
+                        ,"$parent"
+                        ,"$root"
+                        ,'var result=window.{{expr}}($val,$data,$index,$parent,$root);if(result===undefined || result===null) {result=""}; return result'.replace("{{expr}}",expr1fn)
+                    ))( expr1param1,expr1param2,expr1param3,expr1param4,expr1param5 );
+                }
+            }
+            frag = frag.replace(hldr.brac[i],val);
+        }
+    }
+    return frag;
+}          
+
+Templater.compileEach = function (arr){
+    var i, total = "";
+    for(i=0; i<arr.length; i++){
+        total = total + Templater.compileTemplate(arr[i].template, arr[i].data);
+    }
+    return total;
+}
+
+
+/******** DatePicker *******/
+function DatePicker (templates) {
+    // templates 
+    templates = templates || {}
+    this.datePickerHost      = templates.datePickerHost      || document.getElementById("tDatePicker$host").innerHTML;
+    this.datePickerOptions   = templates.datePickerOptions   || document.getElementById("option").innerHTML;
+    this.datePickerContainer = templates.datePickerContainer || document.getElementById("tDatePicker$payload").innerHTML;
+    this.datePickerTable     = templates.datePickerTable     || document.getElementById("table").innerHTML;
+    this.datePickerRow       = templates.datePickerRow       || document.getElementById("tableRow").innerHTML;
+    this.datePickerCell      = templates.datePickerCell      || document.getElementById("tableCell").innerHTML;
+    this.datePickerHeadCell  = templates.datePickerHeadCell  || document.getElementById("tableHeadCell").innerHTML;
+
+    // state
+    this.openNext = true;
+
+    // generate host HTML
+    this.hosts = [];
+    this.renderHost();
+} 
+DatePicker.prototype.bindTarget = function (targetEl) {
+    if( targetEl )
+    {
+        this.bindTo = targetEl
+        if( targetEl.value == "" )
+        {
+            this.dateObj = new Date();
+            this.updateTarget();
+        } else {
+            this.readTarget(targetEl.value);
+        }
+    }
+}
+DatePicker.prototype.bindHost = function (targetEl) {
+    if( targetEl ) {
+        if(this.host && this.host != targetEl) {
+            this.host.innerHTML = "";
+            this.openNext = true;
+        }
+        this.host = targetEl;
+    }
+}
+DatePicker.prototype.rebind = function (targetEl,hostEl) {
+    if(targetEl && hostEl) {
+        this.bindTarget(targetEl);
+        this.bindHost(hostEl);
+        if(this.openNext) {
+            this.renderHTML();
+        } else {
+            this.host.innerHTML = "";
+        }
+        this.openNext = !this.openNext;
+    }
+}
+DatePicker.prototype.updateTarget = function () {
+    this.bindTo.value = Util.toDateText(this.dateObj);
+}
+DatePicker.prototype.readTarget = function (dateText) {
+    if( Validator.isTextDateObj(dateText) ){
+        this.dateObj = Util.toDateObj(dateText);
+    } else {
+        this.dateObj = new Date();
+    }
+}
+DatePicker.prototype.pickToday = function (el,evt) {
+    this.dateObj = new Date();
+    this.renderHTML();
+    this.updateTarget();
+}
+DatePicker.prototype.pickDate = function (el,evt) {
+    if(evt.target.tagName == "TD")
+    {
+        var combined = evt.target.id.split("$")
+        this.dateObj.setFullYear(combined[0]);
+        this.dateObj.setMonth(combined[1]);
+        this.dateObj.setDate(combined[2]);
+        this.renderHTML();
+        this.updateTarget();
+    }
+}
+DatePicker.prototype.pickMonth = function (el,evt) {
+    this.dateObj.setMonth( evt.target.value );
+    this.renderHTML();
+    this.updateTarget();
+}
+DatePicker.prototype.nudgeDate = function (el,evt,mode) {
+    mode = mode || "plus";
+    var currdd = this.dateObj.getDate()+(mode=="plus"?1:-1);
+    this.dateObj.setDate(currdd);
+    this.renderHTML();
+    this.updateTarget();
+}
+DatePicker.prototype.nudgeMonth = function (el,evt,mode) {
+    mode = mode || "plus"
+    var currmm = this.dateObj.getMonth()+(mode=="plus"?1:-1)
+    this.dateObj.setMonth(currmm);
+    this.renderHTML();
+    this.updateTarget();
+}
+DatePicker.prototype.nudgeYear = function (el,evt,mode) {
+    mode = mode || "plus";
+    var curryyyy = this.dateObj.getFullYear()+(mode=="plus"?1:-1);
+    this.dateObj.setFullYear(curryyyy);
+    this.renderHTML();
+    this.updateTarget();
+}
+DatePicker.prototype.renderHost = function (){
+    var temp = document.getElementsByClassName("DP");
+    for(var i=0; i<temp.length; i++) {
+
+        // generate and store host ids
+        var hostId = "datePickerHost$"+Math.round( 1000*Math.random() )
+            ,placeholderId = "datePickerPlaceholder$"+Math.round( 1000*Math.random() );
+        var host = {
+            template: this.datePickerHost
+            ,data: {
+                targetId: temp[i].id
+                ,attrHost:'class="datePickerHost"'
+                ,hostId: hostId
+                ,placeholderId: placeholderId
+            }
+        };                             
+        this.hosts.push(hostId);
+        $(temp[i]).after( Templater.compileTemplate( host.template, host.data ) );
+    }
+    temp = null;
+}
+DatePicker.prototype.genWeekArray = function (today,startDay){
+    var offset, rows=6, columns=7, wArr=[], cwArr, attrComb;
+
+    if(startDay=="mon") offset = 1;
+    else if(startDay=="tue") offset = 2;
+    else if(startDay=="wed") offset = 3;
+    else if(startDay=="thu") offset = 4;
+    else if(startDay=="fri") offset = 5;
+    else if(startDay=="sat") offset = 6;
+    else {offset = 0;}
+
+    var yyyy = today.getFullYear()
+        , mm = today.getMonth()
+        , firstDay = new Date(yyyy,mm,1).getDay()
+        , dd = 1-(firstDay==0?7:firstDay)+offset
+        , currDateObj
+        , isCurrMonth;
+
+    for(var j=0; j<rows; j++){
+        cwArr=[];
+        for(var i=0; i<columns; i++){
+            currDateObj = new Date(yyyy,mm,dd);
+            datediff = (100*currDateObj.getFullYear()) - (100*today.getFullYear()) + currDateObj.getMonth() - today.getMonth();
+            attrComb = ['id="{{id}}"','class="{{class}}"'];
+            attrComb[0] = attrComb[0]
+                .replace("{{id}}",currDateObj.getFullYear()+"{{id}}")
+                .replace("{{id}}","${{id}}")
+                .replace("{{id}}",currDateObj.getMonth()+"{{id}}")
+                .replace("{{id}}","${{id}}")
+                .replace("{{id}}",currDateObj.getDate());
+            attrComb[1] = attrComb[1]
+                .replace("{{class}}",(datediff>0?"dpNext":datediff<0?"dpPrev":"dpCurr")+" {{class}}")
+                .replace("{{class}}",currDateObj.getMonth()==today.getMonth() && currDateObj.getDate()==today.getDate()?"today":"");
+            cwArr[i]={
+                attr: attrComb.join(" ")
+                ,innerHTML: currDateObj.getDate()
+            };
+            dd++
+        }
+        wArr[j]=cwArr.slice(0);
+    }
+    return wArr; 
+}
+DatePicker.prototype.renderHTML = function (){
+    var weeks = this.genWeekArray(this.dateObj,"mon")
+    var datePicker = {
+        template: this.datePickerContainer
+        ,data:{
+            attr:'class="datePicker"'
+            ,attrYear:'class="year"'
+            ,attrCal :'class="nudgeContainer"'
+            ,attrYY  :'class="nudgeContainer"'
+            ,attrMM  :'class="nudgeContainer"'
+            ,attrDD  :'class="nudgeContainer"'
+            ,attrYYLA:'class="nudger" onclick=static$DP.nudgeYear(this,event,"minus")'
+            ,attrYYRA:'class="nudger" onclick=static$DP.nudgeYear(this,event)'
+            ,attrMMLA:'class="nudger" onclick=static$DP.nudgeMonth(this,event,"minus")'
+            ,attrMMRA:'class="nudger" onclick=static$DP.nudgeMonth(this,event)'
+            ,attrDDLA:'class="nudger" onclick=static$DP.nudgeDate(this,event,"minus")'
+            ,attrDDRA:'class="nudger" onclick=static$DP.nudgeDate(this,event)'
+            ,year:this.dateObj.getFullYear()
+            ,month: [
+                 { template: this.datePickerOptions, data: { attr:"value=0",  innerHTML: "Jan"} }
+                ,{ template: this.datePickerOptions, data: { attr:"value=1",  innerHTML: "Feb"} }
+                ,{ template: this.datePickerOptions, data: { attr:"value=2",  innerHTML: "Mar"} }
+                ,{ template: this.datePickerOptions, data: { attr:"value=3",  innerHTML: "Apr"} }
+                ,{ template: this.datePickerOptions, data: { attr:"value=4",  innerHTML: "May"} }
+                ,{ template: this.datePickerOptions, data: { attr:"value=5",  innerHTML: "Jun"} }
+                ,{ template: this.datePickerOptions, data: { attr:"value=6",  innerHTML: "Jul"} }
+                ,{ template: this.datePickerOptions, data: { attr:"value=7",  innerHTML: "Aug"} }
+                ,{ template: this.datePickerOptions, data: { attr:"value=8",  innerHTML: "Sep"} }
+                ,{ template: this.datePickerOptions, data: { attr:"value=9",  innerHTML: "Oct"} }
+                ,{ template: this.datePickerOptions, data: { attr:"value=10", innerHTML: "Nov"} }
+                ,{ template: this.datePickerOptions, data: { attr:"value=11", innerHTML: "Dec"} }
+            ]
+            ,date:this.dateObj.getDate()
+            ,compile: {
+                calendar:{
+                    template: this.datePickerTable
+                    ,data: {
+                        attr:'onclick=static$DP.pickDate(this,event)'
+                        ,compile: {
+                            headRows: [
+                                 { template: this.datePickerRow ,data: { compile: { template: this.datePickerHeadCell ,data: [
+                                        {attr:"", innerHTML:"Mon"}
+                                        ,{attr:"", innerHTML:"Tue"}
+                                        ,{attr:"", innerHTML:"Wed"}
+                                        ,{attr:"", innerHTML:"Thu"}
+                                        ,{attr:"", innerHTML:"Fri"}
+                                        ,{attr:"", innerHTML:"Sat"}
+                                        ,{attr:"", innerHTML:"Sun"}
+                                    ] } } }
+                            ]
+                            ,bodyRows: [
+                                 { template: this.datePickerRow ,data: { compile: { template: this.datePickerCell ,data: weeks[0] } } }
+                                ,{ template: this.datePickerRow ,data: { compile: { template: this.datePickerCell ,data: weeks[1] } } }
+                                ,{ template: this.datePickerRow ,data: { compile: { template: this.datePickerCell ,data: weeks[2] } } }
+                                ,{ template: this.datePickerRow ,data: { compile: { template: this.datePickerCell ,data: weeks[3] } } }
+                                ,{ template: this.datePickerRow ,data: { compile: { template: this.datePickerCell ,data: weeks[4] } } }
+                                ,{ template: this.datePickerRow ,data: { compile: { template: this.datePickerCell ,data: weeks[5] } } }
+                            ]
+                        }
+                    }
+                }                 
+            }
+        }
+    }      
+    datePicker.data.month[this.dateObj.getMonth()].data.attr += " selected";
+    this.host.innerHTML = Templater.compileTemplate( datePicker.template, datePicker.data );
+}
