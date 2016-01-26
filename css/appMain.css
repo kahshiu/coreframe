@@ -1,12 +1,20 @@
-.divider {
-    width:100%; 
-    background:#CCC; 
-    height:2px; 
-    margin:25px 0px;
+.navVPlaceHolder {
+    position:absolute;
 }
-.hideSub > ul {
-    display: none
+.navVPlaceHolder ul {
+    position: relative; top:0em; right:0em;
+    width:10em;
+    list-style:none;
 }
+.navVPlaceHolder li {
+    padding-left: 1em;
+}
+.navVPlaceHolder li>ul{
+    display:none
+}
+.navVPlaceHolder li.expanded>ul{
+    display:block
+}      
 
 .datePickerHost {
     position: relative;
@@ -54,6 +62,13 @@
     background-color:#FF4081;
     font-weight:bold;
 }       
+
+.divider {
+    width:100%; 
+    background:#CCC; 
+    height:2px; 
+    margin:25px 0px;
+}
 
 form label {
     display:block;

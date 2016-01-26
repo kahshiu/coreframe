@@ -15,9 +15,10 @@
         <script type="text/javascript" charset="utf-8" src="js/jquery-1.12.0.min.js"></script>
         <script type="text/javascript" charset="utf-8" src="js/underscore-min.js"></script>
         <script type="text/javascript" charset="utf-8" src="js/appMain.js"></script>
+        #application.util.CFCs.routing.getHTML("templates","jsTemplates")# 
     </head>
     <body id="container"> 
-        #currentContent# #application.util.CFCs.routing.getHTML("templates","jsTemplates")# 
+        #currentContent# 
         <script type="text/javascript" charset="utf-8" src="js/appPost.js"></script>
     </body>
 </html>

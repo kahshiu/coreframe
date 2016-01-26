@@ -1,59 +1,74 @@
-<cfoutput>
 <!--- fragment: form control --->
 <script type="text/template" id="option">
-<option {{$data.attr}}>{{$data.innerHTML}}</option>
+<option {{$data.ATTR}}>{{$data.INNERHTML}}</option>
 </script>
 
 <!--- fragment: tables --->
 <script type="text/template" id="tableHeadCell">
-<th {{$data.attr}}>{{$data.innerHTML}}</th>
+<th {{$data.ATTR}}>{{$data.INNERHTML}}</th>
 </script>
 
 <script type="text/template" id="tableCell">
-<td {{$data.attr}}>{{$data.innerHTML}}</td>
+<td {{$data.ATTR}}>{{$data.INNERHTML}}</td>
 </script>
 
 <script type="text/template" id="tableRow">
-<tr {{$data.attr}}> {{Templater.compileTemplate($data.compile.template,$data.compile.data)}} </tr>
+<tr {{$data.ATTR}}> {{Templater.compileTemplate($data.COMPILE.TEMPLATE,$data.COMPILE.DATA)}} </tr>
 </script>
 
 <script type="text/template" id="table">
-<table {{$data.attr}}>
-    <thead> {{Templater.compileEach($data.compile.headRows)}} </thead>
-    <tbody> {{Templater.compileEach($data.compile.bodyRows)}} </tbody>
+<table {{$data.ATTR}}>
+    <thead> {{Templater.compileEach($data.COMPILE.HEADROWS)}} </thead>
+    <tbody> {{Templater.compileEach($data.COMPILE.BODYROWS)}} </tbody>
 </table>
+</script>
+
+<script type="text/template" id="listUnordered">
+<ul {{$data.ATTR}}> 
+    {{$data.TEXTNODE}} 
+    {{$data.hasOwnProperty("COMPILE") && $data.COMPILE.hasOwnProperty("LIST")?Templater.compileEach($data.COMPILE.LIST):""}} </ul>
+</script>
+
+<script type="text/template" id="listItem">
+<li {{$data.ATTR}}> 
+    {{$data.TEXTNODE}} 
+    {{$data.hasOwnProperty("COMPILE") && $data.COMPILE.hasOwnProperty("SPAN")?Templater.compileTemplate($data.COMPILE.SPAN.TEMPLATE,$data.COMPILE.SPAN.DATA):""}}
+    {{$data.hasOwnProperty("COMPILE") && $data.COMPILE.hasOwnProperty("LIST")?Templater.compileTemplate($data.COMPILE.LIST.TEMPLATE,$data.COMPILE.LIST.DATA):""}}
+</li>
+</script>
+
+<script type="text/template" id="span">
+<span {{$data.ATTR}}> {{$data.TEXTNODE}} {{$data.INNERHTML}} </span>
 </script>
 
 <!--- fragment: datePicker --->
 <script type="text/template" id="tDatePicker$payload">
-<div {{$data.attr}}>
-    <div {{$data.attrDD}}>
+<div {{$data.ATTR}}>
+    <div {{$data.ATTRDD}}>
         <input type="button" value="Today" class="button" onclick="static$DP.pickToday()">
     </div>
-    <div {{$data.attrMM}}>
-        <span {{$data.attrMMLA}}> <input type="button" value="&laquo;" class="button"> </span>
+    <div {{$data.ATTRMM}}>
+        <span {{$data.ATTRMMLA}}> <input type="button" value="&laquo;" class="button"> </span>
         <select onchange=static$DP.pickMonth(this,event)>
-            {{Templater.compileEach($data.month)}} 
+            {{Templater.compileEach($data.MONTH)}} 
         </select>
-        <span {{$data.attrMMRA}}> <input type="button" value="&raquo;" class="button"> </span>
+        <span {{$data.ATTRMMRA}}> <input type="button" value="&raquo;" class="button"> </span>
     </div>
-    <div {{$data.attrYY}}>
-        <span {{$data.attrYYLA}}> <input type="button" value="&laquo;" class="button"> </span>
-        <span {{$data.attrYear}}> {{$data.year}} </span>
-        <span {{$data.attrYYRA}}> <input type="button" value="&raquo;" class="button"> </span>
+    <div {{$data.ATTRYY}}>
+        <span {{$data.ATTRYYLA}}> <input type="button" value="&laquo;" class="button"> </span>
+        <span {{$data.ATTRYEAR}}> {{$data.YEAR}} </span>
+        <span {{$data.ATTRYYRA}}> <input type="button" value="&raquo;" class="button"> </span>
     </div>
-    <div {{$data.attrCal}}>
-        {{Templater.compileTemplate($data.compile.calendar.template,$data.compile.calendar.data)}} 
+    <div {{$data.ATTRCAL}}>
+        {{Templater.compileTemplate($data.COMPILE.CALENDAR.TEMPLATE,$data.COMPILE.CALENDAR.DATA)}} 
     </div>
 </div>
 </script>
 
 <script type="text/template" id="tDatePicker$host">
-<span id="{{$data.hostId}}" {{$data.attrHost}}>
-    <input type="button" value="Calendar" class="button" onclick='static$DP.rebind(document.getElementById("{{$data.targetId}}"),document.getElementById("{{$data.placeholderId}}"))'>
+<span id="{{$data.HOSTID}}" {{$data.ATTRHOST}}>
+    <input type="button" value="Calendar" class="button" onclick='static$DP.rebind(document.getElementById("{{$data.TARGETID}}"),document.getElementById("{{$data.PLACEHOLDERID}}"))'>
 
-    <span id="{{$data.placeholderId}}"></span>
+    <span id="{{$data.PLACEHOLDERID}}"></span>
 </span>
 </script>  
-
-</cfoutput>

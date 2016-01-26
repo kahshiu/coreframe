@@ -607,16 +607,16 @@ DatePicker.prototype.renderHost = function (){
         var hostId = "datePickerHost$"+Math.round( 1000*Math.random() )
             ,placeholderId = "datePickerPlaceholder$"+Math.round( 1000*Math.random() );
         var host = {
-            template: this.datePickerHost
-            ,data: {
-                targetId: temp[i].id
-                ,attrHost:'class="datePickerHost"'
-                ,hostId: hostId
-                ,placeholderId: placeholderId
+            TEMPLATE: this.datePickerHost
+            ,DATA: {
+                TARGETID: temp[i].id
+                ,ATTRHOST:'class="datePickerHost"'
+                ,HOSTID: hostId
+                ,PLACEHOLDERID: placeholderId
             }
         };                             
         this.hosts.push(hostId);
-        $(temp[i]).after( Templater.compileTemplate( host.template, host.data ) );
+        $(temp[i]).after( Templater.compileTemplate( host.TEMPLATE, host.DATA ) );
     }
     temp = null;
 }
@@ -654,8 +654,8 @@ DatePicker.prototype.genWeekArray = function (today,startDay){
                 .replace("{{class}}",(datediff>0?"dpNext":datediff<0?"dpPrev":"dpCurr")+" {{class}}")
                 .replace("{{class}}",currDateObj.getMonth()==today.getMonth() && currDateObj.getDate()==today.getDate()?"today":"");
             cwArr[i]={
-                attr: attrComb.join(" ")
-                ,innerHTML: currDateObj.getDate()
+                ATTR: attrComb.join(" ")
+                ,INNERHTML: currDateObj.getDate()
             };
             dd++
         }
@@ -666,60 +666,60 @@ DatePicker.prototype.genWeekArray = function (today,startDay){
 DatePicker.prototype.renderHTML = function (){
     var weeks = this.genWeekArray(this.dateObj,"mon")
     var datePicker = {
-        template: this.datePickerContainer
-        ,data:{
-            attr:'class="datePicker"'
-            ,attrYear:'class="year"'
-            ,attrCal :'class="nudgeContainer"'
-            ,attrYY  :'class="nudgeContainer"'
-            ,attrMM  :'class="nudgeContainer"'
-            ,attrDD  :'class="nudgeContainer"'
-            ,attrYYLA:'class="nudger" onclick=static$DP.nudgeYear(this,event,"minus")'
-            ,attrYYRA:'class="nudger" onclick=static$DP.nudgeYear(this,event)'
-            ,attrMMLA:'class="nudger" onclick=static$DP.nudgeMonth(this,event,"minus")'
-            ,attrMMRA:'class="nudger" onclick=static$DP.nudgeMonth(this,event)'
-            ,attrDDLA:'class="nudger" onclick=static$DP.nudgeDate(this,event,"minus")'
-            ,attrDDRA:'class="nudger" onclick=static$DP.nudgeDate(this,event)'
-            ,year:this.dateObj.getFullYear()
-            ,month: [
-                 { template: this.datePickerOptions, data: { attr:"value=0",  innerHTML: "Jan"} }
-                ,{ template: this.datePickerOptions, data: { attr:"value=1",  innerHTML: "Feb"} }
-                ,{ template: this.datePickerOptions, data: { attr:"value=2",  innerHTML: "Mar"} }
-                ,{ template: this.datePickerOptions, data: { attr:"value=3",  innerHTML: "Apr"} }
-                ,{ template: this.datePickerOptions, data: { attr:"value=4",  innerHTML: "May"} }
-                ,{ template: this.datePickerOptions, data: { attr:"value=5",  innerHTML: "Jun"} }
-                ,{ template: this.datePickerOptions, data: { attr:"value=6",  innerHTML: "Jul"} }
-                ,{ template: this.datePickerOptions, data: { attr:"value=7",  innerHTML: "Aug"} }
-                ,{ template: this.datePickerOptions, data: { attr:"value=8",  innerHTML: "Sep"} }
-                ,{ template: this.datePickerOptions, data: { attr:"value=9",  innerHTML: "Oct"} }
-                ,{ template: this.datePickerOptions, data: { attr:"value=10", innerHTML: "Nov"} }
-                ,{ template: this.datePickerOptions, data: { attr:"value=11", innerHTML: "Dec"} }
+        TEMPLATE: this.datePickerContainer
+        ,DATA:{
+            ATTR:'class="datePicker"'
+            ,ATTRYEAR:'class="year"'
+            ,ATTRCAL :'class="nudgeContainer"'
+            ,ATTRYY  :'class="nudgeContainer"'
+            ,ATTRMM  :'class="nudgeContainer"'
+            ,ATTRDD  :'class="nudgeContainer"'
+            ,ATTRYYLA:'class="nudger" onclick=static$DP.nudgeYear(this,event,"minus")'
+            ,ATTRYYRA:'class="nudger" onclick=static$DP.nudgeYear(this,event)'
+            ,ATTRMMLA:'class="nudger" onclick=static$DP.nudgeMonth(this,event,"minus")'
+            ,ATTRMMRA:'class="nudger" onclick=static$DP.nudgeMonth(this,event)'
+            ,ATTRDDLA:'class="nudger" onclick=static$DP.nudgeDate(this,event,"minus")'
+            ,ATTRDDRA:'class="nudger" onclick=static$DP.nudgeDate(this,event)'
+            ,YEAR:this.dateObj.getFullYear()
+            ,MONTH: [
+                 { TEMPLATE: this.datePickerOptions ,DATA: { ATTR:"value=0"  ,INNERHTML: "Jan"} }
+                ,{ TEMPLATE: this.datePickerOptions ,DATA: { ATTR:"value=1"  ,INNERHTML: "Feb"} }
+                ,{ TEMPLATE: this.datePickerOptions ,DATA: { ATTR:"value=2"  ,INNERHTML: "Mar"} }
+                ,{ TEMPLATE: this.datePickerOptions ,DATA: { ATTR:"value=3"  ,INNERHTML: "Apr"} }
+                ,{ TEMPLATE: this.datePickerOptions ,DATA: { ATTR:"value=4"  ,INNERHTML: "May"} }
+                ,{ TEMPLATE: this.datePickerOptions ,DATA: { ATTR:"value=5"  ,INNERHTML: "Jun"} }
+                ,{ TEMPLATE: this.datePickerOptions ,DATA: { ATTR:"value=6"  ,INNERHTML: "Jul"} }
+                ,{ TEMPLATE: this.datePickerOptions ,DATA: { ATTR:"value=7"  ,INNERHTML: "Aug"} }
+                ,{ TEMPLATE: this.datePickerOptions ,DATA: { ATTR:"value=8"  ,INNERHTML: "Sep"} }
+                ,{ TEMPLATE: this.datePickerOptions ,DATA: { ATTR:"value=9"  ,INNERHTML: "Oct"} }
+                ,{ TEMPLATE: this.datePickerOptions ,DATA: { ATTR:"value=10" ,INNERHTML: "Nov"} }
+                ,{ TEMPLATE: this.datePickerOptions ,DATA: { ATTR:"value=11" ,INNERHTML: "Dec"} }
             ]
-            ,date:this.dateObj.getDate()
-            ,compile: {
-                calendar:{
-                    template: this.datePickerTable
-                    ,data: {
-                        attr:'onclick=static$DP.pickDate(this,event)'
-                        ,compile: {
-                            headRows: [
-                                 { template: this.datePickerRow ,data: { compile: { template: this.datePickerHeadCell ,data: [
-                                        {attr:"", innerHTML:"Mon"}
-                                        ,{attr:"", innerHTML:"Tue"}
-                                        ,{attr:"", innerHTML:"Wed"}
-                                        ,{attr:"", innerHTML:"Thu"}
-                                        ,{attr:"", innerHTML:"Fri"}
-                                        ,{attr:"", innerHTML:"Sat"}
-                                        ,{attr:"", innerHTML:"Sun"}
+            ,DATE:this.dateObj.getDate()
+            ,COMPILE: {
+                CALENDAR:{
+                    TEMPLATE: this.datePickerTable
+                    ,DATA: {
+                        ATTR:'onclick=static$DP.pickDate(this,event)'
+                        ,COMPILE: {
+                            HEADROWS: [
+                                 { TEMPLATE: this.datePickerRow ,DATA: { COMPILE: { TEMPLATE: this.datePickerHeadCell ,DATA: [
+                                         {ATTR:"" ,INNERHTML:"Mon"}
+                                        ,{ATTR:"" ,INNERHTML:"Tue"}
+                                        ,{ATTR:"" ,INNERHTML:"Wed"}
+                                        ,{ATTR:"" ,INNERHTML:"Thu"}
+                                        ,{ATTR:"" ,INNERHTML:"Fri"}
+                                        ,{ATTR:"" ,INNERHTML:"Sat"}
+                                        ,{ATTR:"" ,INNERHTML:"Sun"}
                                     ] } } }
                             ]
-                            ,bodyRows: [
-                                 { template: this.datePickerRow ,data: { compile: { template: this.datePickerCell ,data: weeks[0] } } }
-                                ,{ template: this.datePickerRow ,data: { compile: { template: this.datePickerCell ,data: weeks[1] } } }
-                                ,{ template: this.datePickerRow ,data: { compile: { template: this.datePickerCell ,data: weeks[2] } } }
-                                ,{ template: this.datePickerRow ,data: { compile: { template: this.datePickerCell ,data: weeks[3] } } }
-                                ,{ template: this.datePickerRow ,data: { compile: { template: this.datePickerCell ,data: weeks[4] } } }
-                                ,{ template: this.datePickerRow ,data: { compile: { template: this.datePickerCell ,data: weeks[5] } } }
+                            ,BODYROWS: [
+                                 { TEMPLATE: this.datePickerRow ,DATA: { COMPILE: { TEMPLATE: this.datePickerCell ,DATA: weeks[0] } } }
+                                ,{ TEMPLATE: this.datePickerRow ,DATA: { COMPILE: { TEMPLATE: this.datePickerCell ,DATA: weeks[1] } } }
+                                ,{ TEMPLATE: this.datePickerRow ,DATA: { COMPILE: { TEMPLATE: this.datePickerCell ,DATA: weeks[2] } } }
+                                ,{ TEMPLATE: this.datePickerRow ,DATA: { COMPILE: { TEMPLATE: this.datePickerCell ,DATA: weeks[3] } } }
+                                ,{ TEMPLATE: this.datePickerRow ,DATA: { COMPILE: { TEMPLATE: this.datePickerCell ,DATA: weeks[4] } } }
+                                ,{ TEMPLATE: this.datePickerRow ,DATA: { COMPILE: { TEMPLATE: this.datePickerCell ,DATA: weeks[5] } } }
                             ]
                         }
                     }
@@ -727,6 +727,6 @@ DatePicker.prototype.renderHTML = function (){
             }
         }
     }      
-    datePicker.data.month[this.dateObj.getMonth()].data.attr += " selected";
-    this.host.innerHTML = Templater.compileTemplate( datePicker.template, datePicker.data );
+    datePicker.DATA.MONTH[this.dateObj.getMonth()].DATA.ATTR += " selected";
+    this.host.innerHTML = Templater.compileTemplate( datePicker.TEMPLATE, datePicker.DATA );
 }
