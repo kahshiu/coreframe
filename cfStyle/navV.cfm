@@ -52,9 +52,25 @@ navV = {
 
 <cfset request.dataF.navV.TEMPLATE = listUnordered>
 <cfset request.dataF.navV.DATA = {}>
+<cfset request.dataF.navV.DATA.ATTR = ''>
+<cfset request.dataF.navV.DATA.TEXTNODE = ''>
 <cfset request.dataF.navV.DATA.COMPILE = {}>
 <cfset request.dataF.navV.DATA.COMPILE.LIST = []>
-<cfset ArrayAppend(request.dataF.navV.DATA.COMPILE.LIST,{ TEMPLATE:listItem ,DATA:{ATTR:'',TEXTNODE:'Training [ + ]' } })>
+<cfset ArrayAppend(request.dataF.navV.DATA.COMPILE.LIST ,{ TEMPLATE:listItem ,DATA:{ATTR:'' ,COMPILE:{} ,TEXTNODE:'Training [ + ]'} })>
+<cfset ArrayAppend(request.dataF.navV.DATA.COMPILE.LIST ,{ TEMPLATE:listItem ,DATA:{ATTR:'' ,COMPILE:{} ,TEXTNODE:'Item2' } })>
+
+<!---
+<cfset Training1_1 = {}>
+<cfset Training1_1.TEMPLATE = listUnordered>
+<cfset Training1_1.DATA = {}>
+<cfset Training1_1.DATA.ATTR = ''>
+<cfset Training1_1.DATA.TEXTNODE = ''>
+<cfset Training1_1.DATA.COMPILE = {}>
+<cfset Training1_1.DATA.COMPILE.LIST = []>
+<cfset ArrayAppend(Training1_1.DATA.COMPILE.LIST,{ TEMPLATE:listItem ,DATA:{ATTR:'',TEXTNODE:'Training1_1' } })>
+
+<cfset request.dataF.navV.DATA.COMPILE.LIST[1].DATA.COMPILE.LIST = Training1_1> 
+--->
 
 </cfsilent>
 <cfoutput>
