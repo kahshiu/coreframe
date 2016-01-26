@@ -15,71 +15,49 @@ this is the billboard
                 <input type="text" placeholder="Name" tabindex="1" id="asdsf" class="DP"></div>
         </div>
     </div>
+<div id="testappend">
+</div>
+<script>
+$(document.getElementById("testappend")).append("<span>testin</span>")
+</script>
   <label>
     <div>Email address</div>
     <input type="email" placeholder="Email address" tabindex="1"></label></form>
 
 <form class="form-horizontal" id=f1>
     <input type="button" id="tttt" validate="alert($value)" onclick="validate(this)" value="Submit form">
-    <script>
+<input type="text" id="xxx" class="DP" validate='alert("asdf");static$CHECK.using($options).enforce("isRequired","{{$data.$el.id}} is not required").enforce("isEarlier","{{$data.el.id}} is earlier than ").render()' onblur="Validate.element(this)">
 
-function validate (el){
-    val = (new Function(
-                "$value"
-                ,el.getAttribute("validate")
-            ))( el.value ); 
-
-
-    console.log( el.getAttribute("isValid") )
-    console.log( el.getAttribute("makevalid"))
-}
-function FValidator (el) {
-    this.el = el
-    this.errTemplate = "<span {{$data.attr}}>{{$data.innerHTML}}</span>";
-    this.errMessage = null;
-    this.errMessages = [];
-    this.flag = true;
-}
-FValidator.prototype.updateFlag = function (obj) {
-    // invalid flag is final (not updated), valid flag is not final (update accordingly)
-    if (!this.flag) {
-        this.errMessage = !this.eMessage? obj.message: this.eMessage;
-        this.errMessages.push(obj.message);
-        return;
-    }
-    this.flag = obj.flag
-}
-FValidator.prototype.isRequired = function () {
-    var obj = {
-        flag:true 
-        ,dMessage:"" 
-    }
-    this.updateFlag (obj)
-    return this 
-}
-FValidator.prototype.limitMax = function () {
-    var obj = {
-        flag:false 
-        ,dMessage:"something is wrong" 
-    }
-    this.updateFlag (obj)
-    return this 
-}
-FValidator.prototype.display = function () {
-    $(this.el).after("<span>wrong</span>")
-}
-val = new FValidator (document.getElementById("tttt"))
-console.log(val.isRequired().limitMax().display())
-
-
-
-
-    //document.getElementById('tttt').onclick = function(){
-    //    console.log("this is from outside")
-    //}
-    //document.getElementById('tttt').onclick = function(){
-    //    console.log("this is from outside333")
-    //}
-    </script>
 </form>
+
+<!---
+<select id="" name="t" MULTIPLE validate='console.log($el,"els",$els,"elselect",$selected,$val)' onclick="Validator.validate(this)">    
+    <option selected>item1</option>
+    <option >item2</option>
+</select>
+
+<input type="radio" name="test" value=1 validate='console.log("el",$el,"els",$els,"elselect",$selected,$val)' onclick="Validator.validate(this)">    
+<input type="radio" name="test" value=2 validate='console.log("el",$el,"els",$els,"elselect",$selected,$val)' onclick="Validator.validate(this)" checked>
+<input type="radio" name="test" value=3 validate='console.log("el",$el,"els",$els,"elselect",$selected,$val)' onclick="Validator.validate(this)" >
+<input type="radio" name="test" value=4 validate='console.log("el",$el,"els",$els,"elselect",$selected,$val)' onclick="Validator.validate(this)" >
+
+<input type="checkbox" name="test2" value=1 validate='console.log("el",$el,"els",$els,"elselect",$selected,$val)' onclick="Validator.validate(this)">
+<input type="checkbox" name="test2" value=2 validate='console.log("el",$el,"els",$els,"elselect",$selected,$val)' onclick="Validator.validate(this)">
+<input type="checkbox" name="test2" value=3 validate='console.log("el",$el,"els",$els,"elselect",$selected,$val)' onclick="Validator.validate(this)">
+<input type="checkbox" name="test2" value=4 validate='console.log("el",$el,"els",$els,"elselect",$selected,$val)' onclick="Validator.validate(this)">
+
+<input type="text" name="text1" validate='console.log("el",$el,"els",$els,"elselect",$selected,$val)' onblur="Validator.validate(this)">
+<input type="button" name="text1" validate='console.log("el",$el,"els",$els,"elselect",$selected,$val)' value="ssss" onclick="Validator.validate(this)">
+<input type="hidden" name="text1" validate='console.log("el",$el,"els",$els,"elselect",$selected,$val)' value="ssss" onchange="Validator.validate(this)">
+<div cat=11 CAT=12 c id="x" validate='console.log("el",$el,"els",$els,"elselect",$selected,$val)' value="ssss" onclick="Validator.validate(this)">div here </div>
+
+<script>
+//console.log(
+//     document.getElementById("x").getAttribute("cat")
+//    ,document.getElementById("x").getAttribute("cAT")
+//    ,document.getElementById("x").getAttribute("b")
+//        )
+
+</script>
+--->
 

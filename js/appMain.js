@@ -1,158 +1,3 @@
-/******** Validator ********/
-var Validator = Validator || {}
-Validator.isBoolean = function (obj) {
-    return Object.prototype.toString.call(obj) === "[object Boolean]";
-}
-Validator.isNumber = function (obj) {
-    return Object.prototype.toString.call(obj) === "[object Number]";
-}
-Validator.isString = function (obj) {
-    return Object.prototype.toString.call(obj) === "[object String]";
-}
-Validator.isUndefined = function (obj) {
-    return Object.prototype.toString.call(obj) === "[object Undefined]";
-}
-Validator.isNull = function (obj) {
-    return Object.prototype.toString.call(obj) === "[object Null]";
-}
-Validator.isFunction = function (obj) {
-    return Object.prototype.toString.call(obj) === "[object Function]";
-}
-Validator.isDate = function (obj) {
-    return Object.prototype.toString.call(obj) === "[object Date]";
-}
-Validator.isRegExp = function (obj) {
-    return Object.prototype.toString.call(obj) === "[object RegExp]";
-}
-Validator.isArray = function (obj) {
-    return Object.prototype.toString.call(obj) === "[object Array]";
-}
-Validator.isObject = function (obj) {
-    return Object.prototype.toString.call(obj) === "[object Object]";
-}
-Validator.isTextDateObj = function (obj){
-    //todo: validate text to date obj
-    return true
-}
-Validator.isCurrency = function (obj) {
-    var i 
-        ,obj = obj.toString()
-        ,result = false 
-        ,pattern = [ 
-            /^(?:(?:\d{1,3}(?:\,\d{3})*)|(?:\d+))(?:\.\d*)?$/
-            ,/(^0$)|^(?:0\.(?:\d*)|(?:\.\d*))$/
-        ]; 
-    for(i=0; i<pattern.length; i++){
-        if(result) break;
-        result = pattern[i].test(obj);
-    }
-    return result;
-}
-Validator.cleanCurrency = function (obj,decimal) {
-    var index, length, pre, post, decimal = decimal || 2, result = "";
-    if(Validator.isCurrency(obj)){
-        obj = parseFloat( obj.toString().replace(/\,/g,"") );              //normalise to int
-        obj = Math.round( obj.toFixed(decimal+4)*Math.pow(10,decimal) ); //truncate with percision of additional 4 decimal points
-        obj = obj.toString();
-
-        if(obj == "0") { pre = "0"; post="00" }
-        else {
-            pre = obj.slice(0,obj.length-2);
-            post = obj.slice(-2);
-            length = pre.length;
-            while(length>3) { length = length-3; pre = pre.slice(0,length) + "," + pre.slice(length); };
-        }
-        result =  pre + "." + post; 
-    }
-    return result;
-}
-Validator.Max = function () {
-    return true;
-}
-
-// generate functions to validate elements
-//generate obj with array of elements to hold result
-// validation object
-
-//Validator.
-//required
-//min
-//max
-//minlength
-//max
-//range no
-//range date
-//pattern
-//email
-//phone
-//number (without symbols?)
-//digits only
-//step
-//dependency on other fields
-//password complexity
-//unique constrain/ across fields
-
-
-
-/******** Utilities ********/
-var Util = Util || {}
-Util.dateDiff = function (datePart,startDate,endDate) {
-
-}
-Util.setRange = function (targetNum,minbase,maxbase){
-    var temp;
-    if(maxbase) temp = Math.min(targetNum,maxbase);
-    if(minbase) temp = Math.max(targetNum,minbase);
-    return temp;
-}
-Util.zeroPadding = function (targetNum,padCount,mode) {
-    var targetNum = targetNum.toString(), count = padCount, padding = "", mode = mode || "pre", result;
-    if(targetNum.length == padCount) return targetNum;
-    while(count>0){ padding = padding+"0"; count--; }
-    if(mode == "pre") {
-        result = (padding+targetNum).slice(-1*padCount);
-    } else {
-        result = (targetNum+padding).slice(0,padCount);
-    }
-    return result;
-}
-Util.getImposed = function (text,pattern,keys) {
-    var i,index,temp,result;
-    temp = {};
-    result = {};
-    for(i=0; i<keys.length; i++){
-        index = 0;
-        result[keys[i]] = [];
-        while (index>-1) {
-            temp.text = text.substring(index);
-            temp.pattern = pattern.substring(index);
-            index = temp.pattern.search(keys[i]);
-            if(index<0) break;
-            result[keys[i]].push( temp.text.slice(index,index+keys[i].length) );
-            index = index+keys[i].length; 
-            if(index>=temp.pattern.length) break;
-        }
-    }
-    return result;
-}
-Util.toDateText = function (dateObj,format) {
-    if(!Validator.isDate(dateObj)) return;
-    var dd = Util.zeroPadding(dateObj.getDate(),2)
-        ,mm = Util.zeroPadding(dateObj.getMonth()+1,2)
-        ,yy = Util.zeroPadding(dateObj.getFullYear(),2)
-        ,yyyy = Util.zeroPadding(dateObj.getFullYear(),4)
-        ,format = format || "dd/mm/yyyy";
-    return format.replace(/dd/g,dd).replace(/mm/g,mm).replace(/yyyy/g,yyyy).replace(/yy/g,yy);
-}
-Util.toDateObj = function (dateText,format) {
-    var year=""
-        ,format = format || "dd/mm/yyyy"
-        ,temp = Util.getImposed(dateText,format,["dd","mm","yyyy","yy"]);
-    if(temp.yyyy.length > 0) year=temp.yyyy[0];
-    else if(temp.yy.length > 0) year=temp.yy[0];
-    return new Date(year,temp.mm[0]-1,temp.dd[0]);
-}
-
 /******** Templater ********/
 var Templater = Templater || {};
 Templater.getPlaceholders = function (template,config) {
@@ -185,7 +30,6 @@ Templater.getPlaceholders = function (template,config) {
     }
     return { brac:placeholders,expr:expressions };
 }
-
 Templater.compileTemplate = function (template,$data,$index,$parent,$root){
     var i=0;
     var j=0;
@@ -242,7 +86,6 @@ Templater.compileTemplate = function (template,$data,$index,$parent,$root){
     }
     return frag;
 }          
-
 Templater.compileEach = function (arr){
     var i, total = "";
     for(i=0; i<arr.length; i++){
@@ -251,6 +94,337 @@ Templater.compileEach = function (arr){
     return total;
 }
 
+/******** Validate ********/
+var Validate = Validate || {}
+Validate.isBoolean = function (obj) {
+    return Object.prototype.toString.call(obj) === "[object Boolean]";
+}
+Validate.isNumber = function (obj) {
+    return Object.prototype.toString.call(obj) === "[object Number]";
+}
+Validate.isString = function (obj) {
+    return Object.prototype.toString.call(obj) === "[object String]";
+}
+Validate.isUndefined = function (obj) {
+    return Object.prototype.toString.call(obj) === "[object Undefined]";
+}
+Validate.isNull = function (obj) {
+    return Object.prototype.toString.call(obj) === "[object Null]";
+}
+Validate.isFunction = function (obj) {
+    return Object.prototype.toString.call(obj) === "[object Function]";
+}
+Validate.isDate = function (obj) {
+    return Object.prototype.toString.call(obj) === "[object Date]";
+}
+Validate.isRegExp = function (obj) {
+    return Object.prototype.toString.call(obj) === "[object RegExp]";
+}
+Validate.isArray = function (obj) {
+    return Object.prototype.toString.call(obj) === "[object Array]";
+}
+Validate.isObject = function (obj) {
+    return Object.prototype.toString.call(obj) === "[object Object]";
+}
+Validate.isTextDateObj = function (obj) {
+    //todo: validate text to date obj
+    return true
+}
+
+//
+Validate.isRequired = function (obj) {
+    return obj!==undefined && obj!==null && ( Validate.isNumber(obj) || (Validate.isString(obj)&&obj.length>0) )
+}
+Validate.isLater = function (obj,bar,includeDay,format) {
+    includeDay = includeDay || true
+    obj = Util.toDateObj(obj,format)
+    bar = Util.toDateObj(bar,format)
+    return (includeDay && obj>=bar) || (!includeDay && obj>bar)
+}
+Validate.isEarlier = function (obj,bar,includeDay,format) {
+    includeDay = includeDay || true;
+    obj = Util.toDateObj(obj,format)
+    bar = Util.toDateObj(bar,format)
+    return (includeDay && obj<=bar) || (!includeDay && obj<bar)
+}
+//
+Validate.isCurrency = function (obj) {
+    var i,obj = obj.toString()
+        ,result = false 
+        ,pattern = [ 
+            /^(?:(?:\d{1,3}(?:\,\d{3})*)|(?:\d+))(?:\.\d*)?$/
+            ,/(^0$)|^(?:0\.(?:\d*)|(?:\.\d*))$/
+        ]; 
+    for(i=0; i<pattern.length; i++){
+        if(result) break;
+        result = pattern[i].test(obj);
+    }
+    return result;
+}
+Validate.element = function (el) {
+    var flag;
+
+    if(el.nodeName=="FORM") {
+        // TODO: loop through validation for all form elements 
+        flag = true;
+
+    } else {
+        // default for input: text,hidden,button,reset
+        var i,script = el.getAttribute("validate").trim() || "";
+        var choices,
+            choicesType = 
+            ( el.nodeName=="SELECT" || (el.nodeName=="INPUT" && (el.type=="checkbox"||el.type=="radio")) )? "multi":
+            ( el.nodeName=="INPUT" && (el.type=="text"||el.type=="hidden"||el.type=="file") )? "single":
+            "none";
+
+        var selectedEl = el,
+            selectedVal = el.value || el.innerHTML, 
+            selectedValType = 
+            ( el.nodeName=="SELECT" && (el.hasAttribute("multiple")||el.hasAttribute("MULTIPLE")) ) || ( el.nodeName=="INPUT" && el.type=="checkbox" )? "multi": 
+            ( el.nodeName=="SELECT" && !(el.hasAttribute("multiple")||el.hasAttribute("MULTIPLE")) ) || ( el.nodeName=="INPUT" && el.type=="radio" )? "single":
+            "none";
+
+        var term = 
+            el.nodeName=="SELECT"? "selected": 
+            el.nodeName=="INPUT" && (el.type=="checkbox"||el.type=="radio")? "checked": 
+            "none";
+
+        if(choicesType == "multi") { 
+            selectedEl = []; 
+            selectedVal = [];
+            choices = 
+                term=="selected"? el.children: 
+                term=="checked"? document.getElementsByName(el.name): 
+                undefined;
+
+            for(i=0; i<choices.length; i++){
+                if( choices[i].selected || choices[i].checked ) {
+                    selectedEl.push( choices[i] )
+                    selectedVal.push( choices[i].value );
+
+                    if( selectedValType == "single" ){
+                        selectedEl = selectedEl[0];
+                        selectedVal = selectedVal[0];
+                        break;
+                    }
+                }
+            } 
+        }
+        flag = script==""? true:( new Function ("$options",script) )( {$el:el,$selected:selectedEl,$val:selectedVal,$els:choices} );
+    }
+    return flag;
+}        
+
+
+
+
+
+
+
+
+
+
+
+// consider moving to util
+Validate.cleanCurrency = function (obj,decimal) {
+    var index, length, pre, post, decimal = decimal || 2, result = "";
+    if(Validate.isCurrency(obj)){
+        obj = parseFloat( obj.toString().replace(/\,/g,"") );              //normalise to int
+        obj = Math.round( obj.toFixed(decimal+4)*Math.pow(10,decimal) ); //truncate with percision of additional 4 decimal points
+        obj = obj.toString();
+
+        if(obj == "0") { pre = "0"; post="00" }
+        else {
+            pre = obj.slice(0,obj.length-2);
+            post = obj.slice(-2);
+            length = pre.length;
+            while(length>3) { length = length-3; pre = pre.slice(0,length) + "," + pre.slice(length); };
+        }
+        result =  pre + "." + post; 
+    }
+    return result;
+}
+
+// generate functions to validate elements
+//generate obj with array of elements to hold result
+// validation object
+
+//Validator.
+//required
+//min
+//max
+//minlength
+//max
+//range no
+//range date
+//pattern
+//email
+//phone
+//number (without symbols?)
+//digits only
+//step
+//dependency on other fields
+//password complexity
+//unique constrain/ across fields
+
+/******** Checker **********/
+function Checker (config){
+    var config = config || {};
+
+    this.options
+    this.msgClassName = config.msgClassName || "";
+    this.elClassName = config.elClassName || "";
+    this.errTemplate = config.template || '<div message class="{{$data.msgClassName}}" id="{{$data.msgId}}"></div>';
+    this.errMessage = "";
+    this.errMessages = [];
+    this.defMessages = {}
+    this.defMessages.isRequired = "{{$data.$el.id}} is required."
+
+    this.flag = true;
+    this.lazy = true; // stop with first flag of false
+}
+// checker: reset variables
+Checker.prototype.using = function ($options) {
+    this.options = $options || {};
+    this.errMessage = "";
+    this.errMessages = [];
+    this.flag = true;
+    return this;
+}
+// checker: enforce rules 
+Checker.prototype.enforce = function (rule,params,$message,$options) {
+    if (!this.flag && this.lazy) { return this; }
+
+    $options = $options || this.options;
+    this.flag = this.flag && (Validate.hasOwnProperty(rule)? Validate[rule]($options.$val):true); 
+    this.registerMessage(rule,$message,$options);
+    return this;
+}
+Checker.prototype.registerMessage = function (rule,$message,$options) {
+    if (!this.flag) {
+        var message = Templater.compileTemplate( $message||this.defMessages.hasOwnProperty(rule)?this.defMessages[rule]:"",$options);
+        this.errMessage = message;
+        this.errMessages.push(message);
+    }
+}
+// checker: render element/ determine content
+Checker.prototype.render = function (template,$data) {
+    if( this.options && this.options.hasOwnProperty("$el") ) { 
+        if(!this.options.$el.hasAttribute("validateId")){
+            $data = $data || {};
+            $data.msgClassName = 
+                $data.msgClassName!==undefined 
+                && $data.msgClassName!==null 
+                && $data.msgClassName!==""? $data.msgClassName:
+                this.msgClassName!==undefined 
+                && this.msgClassName!==null 
+                && this.msgClassName!==""? this.msgClassName: "";
+            $data.msgId = 
+                $data.msgId!==undefined 
+                && $data.msgId!==null 
+                && $data.msgId!==""? $data.msgId: _.uniqueId("validate$");
+            this.options.$el.setAttribute("validateId",$data.msgId);
+
+            $(this.options.$el.parentNode).append(
+                Templater.compileTemplate( template||this.errTemplate,$data ) 
+            );
+        }
+        //if(this.options.$el.nextElementSibling===null 
+        //        || !this.options.$el.nextElementSibling.hasAttribute("message")
+        //        ) {
+        //    $data = $data || {};
+        //    $data.msgClassName = 
+        //        $data.msgClassName!==undefined 
+        //        && $data.msgClassName!==null 
+        //        && $data.msgClassName!==""? $data.msgClassName:
+        //        this.msgClassName!==undefined 
+        //        && this.msgClassName!==null 
+        //        && this.msgClassName!==""? this.msgClassName: "";
+        //    //this.options.parent.appendChild()
+
+        //    $(this.options.$el).parent().append(
+        //        Templater.compileTemplate( template||this.errTemplate,$data ) 
+        //    );
+        //}
+        // write message
+        var errorEl = document.getElementById(this.options.$el.getAttribute("validateId"))
+        if(this.flag){
+            // todo make this into class
+            errorEl.style.display = "none";
+            errorEl.innerHTML = "";
+        } else {
+            errorEl.style.display = "block";
+            errorEl.innerHTML = this.errMessage;
+        }
+    }
+    return this; 
+}
+
+
+/******** Utilities ********/
+var Util = Util || {}
+Util.dateDiff = function (datePart,startDate,endDate) {
+
+}
+Util.setRange = function (targetNum,minbase,maxbase){
+    var temp;
+    if(maxbase) temp = Math.min(targetNum,maxbase);
+    if(minbase) temp = Math.max(targetNum,minbase);
+    return temp;
+}
+Util.zeroPadding = function (targetNum,padCount,mode) {
+    var targetNum = targetNum.toString(), count = padCount, padding = "", mode = mode || "pre", result;
+    if(targetNum.length == padCount) return targetNum;
+    while(count>0){ padding = padding+"0"; count--; }
+    if(mode == "pre") {
+        result = (padding+targetNum).slice(-1*padCount);
+    } else {
+        result = (targetNum+padding).slice(0,padCount);
+    }
+    return result;
+}
+Util.getImposed = function (text,pattern,keys) {
+    var i,index,temp,result;
+    temp = {};
+    result = {};
+    for(i=0; i<keys.length; i++){
+        index = 0;
+        result[keys[i]] = [];
+        while (index>-1) {
+            temp.text = text.substring(index);
+            temp.pattern = pattern.substring(index);
+            index = temp.pattern.search(keys[i]);
+            if(index<0) break;
+            result[keys[i]].push( temp.text.slice(index,index+keys[i].length) );
+            index = index+keys[i].length; 
+            if(index>=temp.pattern.length) break;
+        }
+    }
+    return result;
+}
+Util.toDateText = function (dateObj,format) {
+    if(!Validate.isDate(dateObj)) return;
+    var dd = Util.zeroPadding(dateObj.getDate(),2)
+        ,mm = Util.zeroPadding(dateObj.getMonth()+1,2)
+        ,yy = Util.zeroPadding(dateObj.getFullYear(),2)
+        ,yyyy = Util.zeroPadding(dateObj.getFullYear(),4)
+        ,format = format || "dd/mm/yyyy";
+    return format.replace(/dd/g,dd).replace(/mm/g,mm).replace(/yyyy/g,yyyy).replace(/yy/g,yy);
+}
+Util.toDateObj = function (dateText,format) {
+    var year=""
+        ,format = format || "dd/mm/yyyy"
+        ,temp = Util.getImposed(dateText,format,["dd","mm","yyyy","yy"]);
+    if(temp.yyyy.length > 0) year=temp.yyyy[0];
+    else if(temp.yy.length > 0) year=temp.yy[0];
+    return new Date(year,temp.mm[0]-1,temp.dd[0]);
+}
+Util.maxDate = function (dateObj1,dateObj2) {
+    return ( dateObj1.getTime()<dateObj2.getTime() )? dateObj2: dateObj1;
+}
+Util.maxDateText = function (dateText1,dateText2,format) {
+    return Util.maxDate(Util.toDateObj(dateText1,format),Util.toDateObj(dateText2,format));
+}
 
 /******** DatePicker *******/
 function DatePicker (templates) {
@@ -278,7 +452,7 @@ DatePicker.prototype.bindTarget = function (targetEl) {
         if( targetEl.value == "" )
         {
             this.dateObj = new Date();
-            this.updateTarget();
+            //this.updateTarget();
         } else {
             this.readTarget(targetEl.value);
         }
@@ -307,9 +481,13 @@ DatePicker.prototype.rebind = function (targetEl,hostEl) {
 }
 DatePicker.prototype.updateTarget = function () {
     this.bindTo.value = Util.toDateText(this.dateObj);
+    Validate.element(this.bindTo);
+    if( this.bindTo.value != Util.toDateText(this.dateObj) ){ 
+        this.readTarget(this.bindTo.value)
+    }
 }
 DatePicker.prototype.readTarget = function (dateText) {
-    if( Validator.isTextDateObj(dateText) ){
+    if( Validate.isTextDateObj(dateText) ){
         this.dateObj = Util.toDateObj(dateText);
     } else {
         this.dateObj = new Date();

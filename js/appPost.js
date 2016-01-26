@@ -1,2 +1,3 @@
 // initialise static members of application
-var static$DP = new DatePicker()   
+static$CHECK = new Checker({msgClassName:"error"})
+static$DP = new DatePicker()
