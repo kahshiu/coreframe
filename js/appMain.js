@@ -246,7 +246,7 @@ Templater.compileTemplate = function (template,$data,$index,$parent,$root){
 Templater.compileEach = function (arr){
     var i, total = "";
     for(i=0; i<arr.length; i++){
-        total = total + Templater.compileTemplate(arr[i].template, arr[i].data);
+        total = total + Templater.compileTemplate(arr[i].TEMPLATE, arr[i].DATA);
     }
     return total;
 }
