@@ -89,7 +89,7 @@ Templater.compileTemplate = function (template,$data,$index,$parent,$root){
 Templater.compileEach = function (arr){
     var i, total = "";
     for(i=0; i<arr.length; i++){
-        total = total + Templater.compileTemplate(arr[i].template, arr[i].data);
+        total = total + Templater.compileTemplate(arr[i].TEMPLATE, arr[i].DATA);
     }
     return total;
 }
@@ -425,6 +425,70 @@ Util.maxDate = function (dateObj1,dateObj2) {
 Util.maxDateText = function (dateText1,dateText2,format) {
     return Util.maxDate(Util.toDateObj(dateText1,format),Util.toDateObj(dateText2,format));
 }
+/*Templater.compileTemplate = function (template,$data,$index,$parent,$root){
+    var i=0;
+    var j=0;
+    var hldr,frag="";
+    var expr,expr0,expr1,expr1curr,expr1fn,expr1param1,expr1param2,expr1param3,expr1param4,expr1param5;
+
+    //if(_.isArray($data)) {
+    if(Object.prototype.toString.call( $data ) === '[object Array]') {
+        //console.log($root)
+        for(j=0;j<$data.length;j++){
+            if($root === undefined) $root = $data;
+            frag = frag + Templater.compileTemplate(template,$data[j],j,$parent,$root);
+        }
+    }else{
+        hldr = Templater.getPlaceholders(template,{keys:true})
+        frag = template.slice(0)
+        $root = $root||$data
+        for(i=0;i<hldr.brac.length;i++){
+            expr = hldr.expr[i].split("|");
+            expr0 = expr[0];
+            expr1 = expr[1];
+
+// evaluate expression
+            val = (new Function(
+                "$data"
+                ,"$index"
+                ,"$parent"
+                ,"$root"
+                ,'var result={{expr}};if(result===undefined || result===null) {result=""}; return result'.replace("{{expr}}",expr0)
+            ))( $data,$index,$parent,$root );
+
+// evaluate fn on expression
+            if(expr1) {
+                expr1 = expr1.split(",")
+                for(m=0;m<expr1.length;m++){
+                    expr1fn = expr1[m];
+                    expr1param1 = val;
+                    expr1param2 = $data;
+                    expr1param3 = $index;
+                    expr1param4 = $parent;
+                    expr1param5 = $root;
+                    val = (new Function (
+                        "$val"
+                        ,"$data"
+                        ,"$index"
+                        ,"$parent"
+                        ,"$root"
+                        ,'var result=window.{{expr}}($val,$data,$index,$parent,$root);if(result===undefined || result===null) {result=""}; return result'.replace("{{expr}}",expr1fn)
+                    ))( expr1param1,expr1param2,expr1param3,expr1param4,expr1param5 );
+                }
+            }
+            frag = frag.replace(hldr.brac[i],val);
+        }
+    }
+    return frag;
+}          
+
+Templater.compileEach = function (arr){
+    var i, total = "";
+    for(i=0; i<arr.length; i++){
+    }
+    return total;
+}
+*/
 
 /******** DatePicker *******/
 function DatePicker (templates) {
