@@ -730,3 +730,14 @@ DatePicker.prototype.renderHTML = function (){
     datePicker.DATA.MONTH[this.dateObj.getMonth()].DATA.ATTR += " selected";
     this.host.innerHTML = Templater.compileTemplate( datePicker.TEMPLATE, datePicker.DATA );
 }
+
+Navbar = {}
+Navbar.expandSubMenu = function (el,evt) {
+    if(evt.target.nodeName=="LI" 
+        && evt.target.children.length>0 
+        && evt.target.children[evt.target.children.length-1].nodeName=="UL")
+    {
+        var $el = $(evt.target);
+        $el.hasClass("expanded")? $el.removeClass("expanded"): $el.addClass("expanded");
+    }
+}
