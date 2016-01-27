@@ -68,7 +68,7 @@
                 </cfif>
             </cfif>
 
-            <cfset application.util.CFCs.routing.getFuseboxLinks(fusebox)>
+            <cfset application.util.CFCs.routing.setfuseboxVars(fusebox)>
             <cfset application.util.CFCs.routing.getHTML(fusebox,fuseaction)>
             <cfset application.util.CFCs.routing.styleFusebox(fusebox)>
             <cfset application.util.CFCs.routing.styleGlobally()>
@@ -133,6 +133,14 @@
         </cfif>
         <!--- separate structs for framework data and application data --->
         <cfset request.dataF = Duplicate(application.dataF)>
+        <cfset request.dataF.navV = {}>
+        <cfset request.dataF.navV.TEMPLATE = "">
+        <cfset request.dataF.navV.DATA = {}>
+
+        <cfset request.dataF.bread = {}>
+        <cfset request.dataF.bread.TEMPLATE = "">
+        <cfset request.dataF.bread.DATA = {}>
+
         <cfset request.data = {}>
     </cffunction>
 

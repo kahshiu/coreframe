@@ -16,6 +16,26 @@
     display:block
 }      
 
+.tabs span{
+    padding: 0.5em;
+}
+.tabs span.selected {
+    border-style:solid;
+    border-color:#DDD #DDD #FFF #DDD;
+    border-width:2px;
+    background:#FFF
+}
+.tabs {
+    border-bottom:2px solid #DDD;
+}
+.tabpages div {
+    display:none;
+    margin:1em 0em;
+}
+.tabpages div.selected {
+    display:block;
+}   
+
 .datePickerHost {
     position: relative;
     width: 4em
@@ -68,6 +88,9 @@
     background:#CCC; 
     height:2px; 
     margin:25px 0px;
+}
+.pointer {
+    cursor:pointer
 }
 
 form label {

@@ -23,6 +23,7 @@
         <cfreturn this>    
     </cffunction>
 
+<!--- route validation (available CFCs) --->
     <cffunction name="validateRoute" returntype="boolean" output="false"
         description="validate a given route. Must initialise/ store CFCs and paths first">
 
@@ -63,6 +64,17 @@
         </cfif>
     </cffunction>
 
+<!--- route to set fusebox specific variables (request scope) --->
+    <cffunction access="public" name="setFuseboxVars" returntype="void" output="false">
+        <cfargument name="fusebox" type="string" required="true">
+
+        <cfif validateRoute(arguments.fusebox,"fuseboxVars")>
+            <cfset request.dataF.links = this.routesCFCs[arguments.fusebox].fuseboxVars()>
+        </cfif>
+        
+    </cffunction>
+
+<!--- route to action file (no display) --->
     <cffunction access="public" name="runCF" returntype="void" output="false"
         description="run CF action code in template">
 
@@ -77,15 +89,7 @@
         <cfset this.routesCFCs[arguments.fusebox][arguments.fuseaction]()>
     </cffunction>
 
-    <cffunction access="public" name="getFuseboxLinks" returntype="void" output="false">
-        <cfargument name="fusebox" type="string" required="true">
-
-        <cfif validateRoute(arguments.fusebox,"fuseboxLinks")>
-            <cfset request.dataF.links = this.routesCFCs[arguments.fusebox].fuseboxLinks()>
-        </cfif>
-        
-    </cffunction>
-
+<!--- route to display file  --->
     <cffunction access="public" name="getHTML" returntype="string" output="false"
         description="get HTML string of page and assign to request.html">
 
@@ -106,6 +110,7 @@
         <cfreturn request.HTML>
     </cffunction>
 
+<!--- route utility to write url --->
     <cffunction access="public" name="writeURL" returntype="any" output="false">
         <cfargument name="route" type="any" required="false">
         <cfset var theURL = "#request.dataF.hostname##request.dataF.subdir#index.cfm?route=#arguments.route#&#session.urltoken#">

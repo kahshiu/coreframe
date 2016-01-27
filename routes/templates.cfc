@@ -33,7 +33,11 @@
 
     <cffunction access="public" name="span" returntype="string" output="true">
         <cfoutput>
-<span {{$data.ATTR}}> {{$data.TEXTNODE}} {{$data.INNERHTML}} </span>
+<span {{$data.ATTR}}> 
+    {{$data.TEXTNODE}} 
+    {{$data.INNERHTML}} 
+    {{$data.hasOwnProperty("COMPILE") && $data.COMPILE.hasOwnProperty("SPAN")?Templater.compileTemplate($data.COMPILE.SPAN.TEMPLATE,$data.COMPILE.SPAN.DATA):""}}
+</span>
         </cfoutput>
     </cffunction>
 

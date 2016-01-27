@@ -731,7 +731,7 @@ DatePicker.prototype.renderHTML = function (){
     this.host.innerHTML = Templater.compileTemplate( datePicker.TEMPLATE, datePicker.DATA );
 }
 
-Navbar = {}
+var Navbar = {}
 Navbar.objectifyQString = function (url) {
     var url = url || window.location.href
         ,qString = {} 
@@ -810,4 +810,36 @@ Navbar.expandSubmenu = function (el,evt) {
         var $el = $(evt.target);
         $el.hasClass("expanded")? $el.removeClass("expanded"): $el.addClass("expanded");
     }
+}
+
+var Tab = {}
+Tab.selectPage = function (el) {
+    var $page,pageWrapper = el.parentNode;
+    if(pageWrapper.className=="tabpages"){
+        for(var i=0;i<pageWrapper.children.length;i++){
+            $page = $(pageWrapper.children[i]);
+            if(el==pageWrapper.children[i]){
+                $page.addClass("selected")
+            } else {
+                $page.removeClass("selected")
+            }
+        }
+    }
+}
+Tab.selectTab = function (el) {
+    var $tab,tabsWrapper = el.parentNode;
+    if(tabsWrapper.className=="tabs"){
+        for(var i=0;i<tabsWrapper.children.length;i++){
+            $tab = $(tabsWrapper.children[i]);
+            if(el==tabsWrapper.children[i]){
+                $tab.addClass("selected")
+            } else {
+                $tab.removeClass("selected")
+            }
+        }
+    }
+}
+Tab.selectTab2 = function (el) {
+    Tab.selectTab(el)
+    Tab.selectPage(document.getElementById(el.getAttribute("pageId")))
 }
