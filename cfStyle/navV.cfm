@@ -50,7 +50,7 @@ navV = {
 <cfset request.dataF.navV.DATA.TEXTNODE = ''>
 <cfset request.dataF.navV.DATA.COMPILE = {}>
 <cfset request.dataF.navV.DATA.COMPILE.LIST = []>
-<cfset ArrayAppend(request.dataF.navV.DATA.COMPILE.LIST ,{ TEMPLATE:listItem ,DATA:{ATTR:'id="starter"' ,COMPILE:{} ,TEXTNODE:'<a href="#application.util.cfcs.routing.writeurl(route='public.starterpack')#">Starter Pack</a> [ + ]'  }})>
+<cfset ArrayAppend(request.dataF.navV.DATA.COMPILE.LIST ,{ TEMPLATE:listItem ,DATA:{ATTR:'id="starter"' ,COMPILE:{} ,TEXTNODE:'<a href="javascript:Navbar.writeURL2({route:''public.home''})">Starter Pack</a> [ + ]'  }})>
 <!--- 
 <cfset ArrayAppend(request.dataF.navV.DATA.COMPILE.LIST ,{ TEMPLATE:listItem ,DATA:{ATTR:'' ,COMPILE:{} ,TEXTNODE: application.util.CFCs.templater.compiler({element:"a",attr:{"href":"www.google.com"},innerHTML:"Training"}) }})>
 --->
@@ -62,8 +62,8 @@ navV = {
 <cfset sp.DATA.TEXTNODE = ''>
 <cfset sp.DATA.COMPILE = {}>
 <cfset sp.DATA.COMPILE.LIST = []>
-<cfset ArrayAppend(sp.DATA.COMPILE.LIST,{ TEMPLATE:listItem ,DATA:{ATTR:'id="starter$meara"',TEXTNODE:'<a href="#application.util.cfcs.routing.writeurl(route='public.mesra')#">Merimen Mesra</a>' } })>
-<cfset ArrayAppend(sp.DATA.COMPILE.LIST,{ TEMPLATE:listItem ,DATA:{ATTR:'id="starter$training"',TEXTNODE:'<a href="#application.util.cfcs.routing.writeurl(route='public.training')#">Training Materials</a>' } })>
+<cfset ArrayAppend(sp.DATA.COMPILE.LIST,{ TEMPLATE:listItem ,DATA:{ATTR:'id="starter$meara"',TEXTNODE:'<a href="javascript:Navbar.writeURL2({route:''public.mesra''})">Merimen Mesra</a>' } })>
+<cfset ArrayAppend(sp.DATA.COMPILE.LIST,{ TEMPLATE:listItem ,DATA:{ATTR:'id="starter$training"',TEXTNODE:'<a href="javascript:Navbar.writeURL2({route:''public.training''})">Training Materials</a>' } })>
 
 <cfset request.dataF.navV.DATA.COMPILE.LIST[1].DATA.COMPILE.LIST = sp> 
 
@@ -72,7 +72,8 @@ navV = {
 <cfoutput>
 <div id="navV$secondary" class="navPlaceHolder" onclick="Navbar.expandSubmenu(this,event)"> </div>
 <script>
-    var navV = #serializeJSON(request.dataF.navV)#
-    document.getElementById("navV$secondary").innerHTML = Templater.compileTemplate(navV.TEMPLATE,navV.DATA)
+    var navPlaceholder=document.getElementById("navV$secondary"), navV=#serializeJSON(request.dataF.navV)#
+    request.navbars.push(navPlaceholder);
+    navPlaceholder.innerHTML = Templater.compileTemplate(navV.TEMPLATE,navV.DATA)
 </script>
 </cfoutput>

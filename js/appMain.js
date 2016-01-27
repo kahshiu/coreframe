@@ -732,7 +732,77 @@ DatePicker.prototype.renderHTML = function (){
 }
 
 Navbar = {}
-Navbar.expandSubMenu = function (el,evt) {
+Navbar.objectifyQString = function (url) {
+    var url = url || window.location.href
+        ,qString = {} 
+        ,delimPos 
+        ,arr = url.slice(url.indexOf("?")+1).split("&");
+
+    for(var i=0;i<arr.length;i++){
+        delimPos = arr[i].indexOf("=");
+        qString[ arr[i].slice(0,delimPos) ] = arr[i].slice(delimPos+1)
+    }
+
+    return qString
+}
+Navbar.stringifyQString = function (obj) {
+    var total = [];
+    for(var key in obj){
+        total.push( key+"="+obj[key] );
+    }
+    return total.join("&");
+}
+
+Navbar.encodeSubmenuState = function (navbarEls) {
+    var full="",key,value;
+    if(Validate.isArray(navbarEls)){
+        for(var i=0;i<navbarEls.length;i++){
+            full=full+Navbar.encodeSubmenuState(navbarEls[i]);
+        }
+    } else {
+        key = "state${{elId}}=".replace("{{elId}}",navbarEls.id) ,value = [];
+        $(navbarEls).find(".expanded").each(function(index,element){
+            value.push(element.id);
+        })
+        full = key+value.join("|");
+    }
+    return full;
+} 
+Navbar.decodeSubmenuState = function (url) {
+    var obj = Navbar.objectifyQString(url)
+        ,delim
+        ,keys = Object.keys(obj)
+        ,key
+        ,elIds;
+
+    for(var i=0; i<keys.length; i++){
+        delim = keys[i].indexOf("$");
+        prefix = keys[i].slice(0,delim);
+        if(prefix=="state"){
+            elIds = obj[keys[i]].split("|");
+            for(var j=0; j<elIds.length; j++){
+                $(document.getElementById(elIds[j])).addClass("expanded")
+            }
+        }
+    }
+} 
+
+Navbar.writeURL = function (qstring) {
+    var urlTemplate = "{{$data.hostname}}{{$data.subdir}}index.cfm?{{$data.qstring}}&{{$data.urltoken}}", urlData = {};
+    urlData.hostname = window.request.hostname;
+    urlData.subdir = window.request.subdir;
+    urlData.qstring = qstring;
+    urlData.urltoken = window.request.urltoken;
+    return Templater.compileTemplate(urlTemplate,urlData);
+} 
+
+Navbar.writeURL2 = function (qstring) {
+    window.location = Navbar.writeURL( 
+            [Navbar.stringifyQString(qstring),Navbar.encodeSubmenuState(request.navbars)].join("&")
+            );
+}
+
+Navbar.expandSubmenu = function (el,evt) {
     if(evt.target.nodeName=="LI" 
         && evt.target.children.length>0 
         && evt.target.children[evt.target.children.length-1].nodeName=="UL")
