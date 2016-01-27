@@ -38,7 +38,17 @@
 </script>
 
 <script type="text/template" id="span">
-<span {{$data.ATTR}}> {{$data.TEXTNODE}} {{$data.INNERHTML}} </span>
+<span {{$data.ATTR}}> 
+    {{$data.TEXTNODE}} 
+    {{$data.hasOwnProperty("COMPILE") && $data.COMPILE.hasOwnProperty("SPAN")?Templater.compileTemplate($data.COMPILE.SPAN.TEMPLATE,$data.COMPILE.SPAN.DATA):""}}
+</span>
+</script>
+
+<script type="text/template" id="div">
+<div {{$data.ATTR}}> 
+    {{$data.TEXTNODE}} 
+    {{$data.hasOwnProperty("COMPILE") && $data.COMPILE.hasOwnProperty("SPAN")?Templater.compileTemplate($data.COMPILE.SPAN.TEMPLATE,$data.COMPILE.SPAN.DATA):""}}
+</div>
 </script>
 
 <!--- fragment: datePicker --->
