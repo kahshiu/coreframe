@@ -108,6 +108,7 @@
             <cfset StructClear(application.dataF)>
         </cfif>
         <cfset application.dataF.hostname = "http://127.0.0.1:8888/">
+        <cfset application.dataF.subdir = "coreframe/">
 
         <!--- utils --->
         <cfif StructKeyExists(application,"util")>

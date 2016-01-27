@@ -83,5 +83,17 @@
         <cfmodule template="/public/billboard.cfm">
     </cffunction>
 
+    <cffunction access="public" name="starterpack" returntype="any" output="true">
+        <cfmodule template="/public/starterpack.cfm">
+    </cffunction>
+
+    <cffunction access="public" name="mesra" returntype="any" output="true">
+        <cfmodule template="/public/mesra.cfm">
+    </cffunction>
+
+    <cffunction access="public" name="training" returntype="any" output="true">
+        <cfmodule template="/public/training.cfm">
+    </cffunction>
+
 </cfcomponent>
 

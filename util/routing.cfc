@@ -108,7 +108,7 @@
 
     <cffunction access="public" name="writeURL" returntype="any" output="false">
         <cfargument name="route" type="any" required="false">
-        <cfset var theURL = "#request.dataF.hostname#index.cfm?route=#arguments.route#&#session.urltoken#">
+        <cfset var theURL = "#request.dataF.hostname##request.dataF.subdir#index.cfm?route=#arguments.route#&#session.urltoken#">
         <cfreturn theURL>
     </cffunction>
 
