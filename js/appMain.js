@@ -274,7 +274,7 @@ function Checker (config){
     this.options
     this.msgClassName = config.msgClassName || "";
     this.elClassName = config.elClassName || "";
-    this.errTemplate = config.template || '<div message class="{{$data.msgClassName}}" id="{{$data.msgId}}"></div>';
+    this.errTemplate = config.template || '<span message class="{{$data.msgClassName}}" id="{{$data.msgId}}"></span>';
     this.errMessage = "";
     this.errMessages = [];
     this.defMessages = {}
@@ -329,31 +329,13 @@ Checker.prototype.render = function (template,$data) {
                 Templater.compileTemplate( template||this.errTemplate,$data ) 
             );
         }
-        //if(this.options.$el.nextElementSibling===null 
-        //        || !this.options.$el.nextElementSibling.hasAttribute("message")
-        //        ) {
-        //    $data = $data || {};
-        //    $data.msgClassName = 
-        //        $data.msgClassName!==undefined 
-        //        && $data.msgClassName!==null 
-        //        && $data.msgClassName!==""? $data.msgClassName:
-        //        this.msgClassName!==undefined 
-        //        && this.msgClassName!==null 
-        //        && this.msgClassName!==""? this.msgClassName: "";
-        //    //this.options.parent.appendChild()
-
-        //    $(this.options.$el).parent().append(
-        //        Templater.compileTemplate( template||this.errTemplate,$data ) 
-        //    );
-        //}
         // write message
         var errorEl = document.getElementById(this.options.$el.getAttribute("validateId"))
         if(this.flag){
-            // todo make this into class
             errorEl.style.display = "none";
             errorEl.innerHTML = "";
         } else {
-            errorEl.style.display = "block";
+            errorEl.style.display = "initial";
             errorEl.innerHTML = this.errMessage;
         }
     }
@@ -545,10 +527,11 @@ DatePicker.prototype.rebind = function (targetEl,hostEl) {
 }
 DatePicker.prototype.updateTarget = function () {
     this.bindTo.value = Util.toDateText(this.dateObj);
-    Validate.element(this.bindTo);
-    if( this.bindTo.value != Util.toDateText(this.dateObj) ){ 
-        this.readTarget(this.bindTo.value)
-    }
+    // todo: develop/ test
+    //Validate.element(this.bindTo);
+    //if( this.bindTo.value != Util.toDateText(this.dateObj) ){ 
+    //    this.readTarget(this.bindTo.value)
+    //}
 }
 DatePicker.prototype.readTarget = function (dateText) {
     if( Validate.isTextDateObj(dateText) ){
@@ -731,6 +714,7 @@ DatePicker.prototype.renderHTML = function (){
     this.host.innerHTML = Templater.compileTemplate( datePicker.TEMPLATE, datePicker.DATA );
 }
 
+/******** Genral Navigator */
 var Navbar = {}
 Navbar.objectifyQString = function (url) {
     var url = url || window.location.href
@@ -812,6 +796,7 @@ Navbar.expandSubmenu = function (el,evt) {
     }
 }
 
+/******** Tabs *************/
 var Tab = {}
 Tab.selectPage = function (el) {
     var $page,pageWrapper = el.parentNode;

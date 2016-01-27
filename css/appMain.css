@@ -97,6 +97,7 @@ form label {
     display:block;
 }
 
+.error,
 form select, 
 form input {
     padding:4px;

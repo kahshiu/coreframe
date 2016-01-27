@@ -26,7 +26,7 @@ $(document.getElementById("testappend")).append("<span>testin</span>")
 
 <form class="form-horizontal" id=f1>
     <input type="button" id="tttt" validate="alert($value)" onclick="validate(this)" value="Submit form">
-<input type="text" id="xxx" class="DP" validate='alert("asdf");static$CHECK.using($options).enforce("isRequired","{{$data.$el.id}} is not required").enforce("isEarlier","{{$data.el.id}} is earlier than ").render()' onblur="Validate.element(this)">
+<input type="text" id="xxx" class="DP" validate='static$CHECK.using($options).enforce("isRequired","{{$data.$el.id}} is not required").enforce("isEarlier","{{$data.el.id}} is earlier than ").render()' onblur="Validate.element(this)">
 
 </form>
 
