@@ -1,10 +1,4 @@
 <cfsilent>
-<!--- base reference for CF templater
-<cfset test = {}>
-<cfset test.a = application.util.CFCs.routing.getHTML("templates","listitem")> 
-<cfset test.b = "asdf333">
---->
-
 <!--- base reference for javascript
 var navTemplate = {}
 navTemplate.span = document.getElementById("span").innerHTML;
@@ -56,27 +50,29 @@ navV = {
 <cfset request.dataF.navV.DATA.TEXTNODE = ''>
 <cfset request.dataF.navV.DATA.COMPILE = {}>
 <cfset request.dataF.navV.DATA.COMPILE.LIST = []>
-<cfset ArrayAppend(request.dataF.navV.DATA.COMPILE.LIST ,{ TEMPLATE:listItem ,DATA:{ATTR:'' ,COMPILE:{} ,TEXTNODE:'Training [ + ]'} })>
-<cfset ArrayAppend(request.dataF.navV.DATA.COMPILE.LIST ,{ TEMPLATE:listItem ,DATA:{ATTR:'' ,COMPILE:{} ,TEXTNODE:'Item2' } })>
-
-<!---
-<cfset Training1_1 = {}>
-<cfset Training1_1.TEMPLATE = listUnordered>
-<cfset Training1_1.DATA = {}>
-<cfset Training1_1.DATA.ATTR = ''>
-<cfset Training1_1.DATA.TEXTNODE = ''>
-<cfset Training1_1.DATA.COMPILE = {}>
-<cfset Training1_1.DATA.COMPILE.LIST = []>
-<cfset ArrayAppend(Training1_1.DATA.COMPILE.LIST,{ TEMPLATE:listItem ,DATA:{ATTR:'',TEXTNODE:'Training1_1' } })>
-
-<cfset request.dataF.navV.DATA.COMPILE.LIST[1].DATA.COMPILE.LIST = Training1_1> 
+<cfset ArrayAppend(request.dataF.navV.DATA.COMPILE.LIST ,{ TEMPLATE:listItem ,DATA:{ATTR:'id="starter"' ,COMPILE:{} ,TEXTNODE:'<a href="#application.util.cfcs.routing.writeurl(route='public.starterpack')#">Starter Pack</a> [ + ]'  }})>
+<!--- 
+<cfset ArrayAppend(request.dataF.navV.DATA.COMPILE.LIST ,{ TEMPLATE:listItem ,DATA:{ATTR:'' ,COMPILE:{} ,TEXTNODE: application.util.CFCs.templater.compiler({element:"a",attr:{"href":"www.google.com"},innerHTML:"Training"}) }})>
 --->
 
+<cfset sp = {}>
+<cfset sp.TEMPLATE = listUnordered>
+<cfset sp.DATA = {}>
+<cfset sp.DATA.ATTR = ''>
+<cfset sp.DATA.TEXTNODE = ''>
+<cfset sp.DATA.COMPILE = {}>
+<cfset sp.DATA.COMPILE.LIST = []>
+<cfset ArrayAppend(sp.DATA.COMPILE.LIST,{ TEMPLATE:listItem ,DATA:{ATTR:'id="starter$meara"',TEXTNODE:'<a href="#application.util.cfcs.routing.writeurl(route='public.mesra')#">Merimen Mesra</a>' } })>
+<cfset ArrayAppend(sp.DATA.COMPILE.LIST,{ TEMPLATE:listItem ,DATA:{ATTR:'id="starter$training"',TEXTNODE:'<a href="#application.util.cfcs.routing.writeurl(route='public.training')#">Training Materials</a>' } })>
+
+<cfset request.dataF.navV.DATA.COMPILE.LIST[1].DATA.COMPILE.LIST = sp> 
+
 </cfsilent>
+
 <cfoutput>
-<div id="navV" class="navVPlaceHolder" onclick="Navbar.expandSubMenu(this,event)"> </div>
+<div id="navV$secondary" class="navPlaceHolder" onclick="Navbar.expandSubmenu(this,event)"> </div>
 <script>
     var navV = #serializeJSON(request.dataF.navV)#
-    document.getElementById("navV").innerHTML = Templater.compileTemplate(navV.TEMPLATE,navV.DATA)
+    document.getElementById("navV$secondary").innerHTML = Templater.compileTemplate(navV.TEMPLATE,navV.DATA)
 </script>
 </cfoutput>

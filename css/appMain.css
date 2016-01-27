@@ -1,18 +1,18 @@
-.navVPlaceHolder {
+.navPlaceHolder {
     position:absolute;
 }
-.navVPlaceHolder ul {
+.navPlaceHolder ul {
     position: relative; top:0em; right:0em;
     width:10em;
     list-style:none;
 }
-.navVPlaceHolder li {
+.navPlaceHolder li {
     padding-left: 1em;
 }
-.navVPlaceHolder li>ul{
+.navPlaceHolder li>ul{
     display:none
 }
-.navVPlaceHolder li.expanded>ul{
+.navPlaceHolder li.expanded>ul{
     display:block
 }      
 
