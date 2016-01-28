@@ -44,7 +44,7 @@
 </script>  
 
 <div class="tabpages">
-    <div id="day1" class=""> 
+    <div id="day1" class="selected"> 
         <h4> Welcome to Merimen!  </h4>
         <br>
         <p class="bold"> 1. Check your machine setup </p>
@@ -298,7 +298,7 @@ select top 100 * from fobjb3022 -- co ownership of label (**bitwise claimtype) <
 </div>
 --->
 
-    <div id="train" class="selected">  
+    <div id="train" class="">  
         <h4> Merimen Quick Train </h4> <br>
         <p> This is a generic training flow to expose Trainees without any firm foundation 
             to common technologies that Merimen manipulates to deliver its online system to clients.
