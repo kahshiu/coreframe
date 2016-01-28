@@ -28,11 +28,11 @@
 .tabs {
     border-bottom:2px solid #DDD;
 }
-.tabpages div {
+.tabpages>div {
     display:none;
     margin:1em 0em;
 }
-.tabpages div.selected {
+.tabpages>div.selected {
     display:block;
 }   
 
@@ -92,6 +92,13 @@
 .pointer {
     cursor:pointer
 }
+.interactive:hover{
+    background-color:#DDD
+}
+
+.bold { font-weight:bold; }
+.uline { text-decoration:underline; }
+.monospaced { font-family:Lucida Console, Monaco, monospace }
 
 form label {
     display:block;

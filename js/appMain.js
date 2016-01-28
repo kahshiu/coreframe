@@ -824,7 +824,36 @@ Tab.selectTab = function (el) {
         }
     }
 }
-Tab.selectTab2 = function (el) {
+// decorators: select by using el reference
+Tab.selectSinglePageByTab = function (el) {
     Tab.selectTab(el)
     Tab.selectPage(document.getElementById(el.getAttribute("pageId")))
 }
+// decorators: select by using el id
+Tab.selectSinglePageByTabId = function (elId) {
+    var el = document.getElementById(elId)
+    if(el!=null) {
+        Tab.selectSinglePageByTab(el)
+    }
+} 
+Tab.decodeTabState = function (url) {
+    var obj = Navbar.objectifyQString(url)
+        ,delim
+        ,keys = Object.keys(obj)
+        ,key
+        ,elIds;
+
+    for(var i=0; i<keys.length; i++){
+        delim = keys[i].indexOf("$");
+        prefix = keys[i].slice(0,delim);
+        if(prefix=="tabState"){
+            elId = obj[keys[i]];
+            Tab.selectSinglePageByTabId(elId)
+        }
+    }
+}
+
+    //todo:horizontal scroll vertical navigation
+    // Tab.create = function (config) {
+    //
+    // }
