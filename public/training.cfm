@@ -10,7 +10,7 @@
     <cfset mesra = {}>
     <cfset mesra.TEMPLATE = span>
     <cfset mesra.DATA = {}>
-    <cfset mesra.DATA.TEXTNODE = "/ <a href='javascript:Navbar.writeURL2({route:""public.training""})'>Training</a>" >
+    <cfset mesra.DATA.TEXTNODE = "/ Training" >
     <cfset mesra.DATA.COMPILE = {}>
     <cfset sp.DATA.COMPILE.SPAN = mesra>
 </cfsilent>

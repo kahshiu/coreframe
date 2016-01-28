@@ -9,7 +9,7 @@
 <cfset request.dataF.navV.DATA.TEXTNODE = ''>
 <cfset request.dataF.navV.DATA.COMPILE = {}>
 <cfset request.dataF.navV.DATA.COMPILE.LIST = []>
-<cfset ArrayAppend(request.dataF.navV.DATA.COMPILE.LIST ,{ TEMPLATE:listItem ,DATA:{ATTR:'class="pointer" id="starter"' ,COMPILE:{} ,TEXTNODE:'<a href="javascript:Navbar.writeURL2({route:''public.home''})">Starter Pack</a> [ + ]'  }})>
+<cfset ArrayAppend(request.dataF.navV.DATA.COMPILE.LIST ,{ TEMPLATE:listItem ,DATA:{ATTR:'class="pointer" id="starter"' ,COMPILE:{} ,TEXTNODE:'<a href="javascript:Navbar.writeURL2({route:''public.starterpack''})">Starter Pack</a> [ + ]'  }})>
 
 <cfset sp = {}>
 <cfset sp.TEMPLATE = listUnordered>
