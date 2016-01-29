@@ -1,4 +1,4 @@
-# Core-framework
+# Core Framework
 An experimental application written in Coldfusion (CF), Lucee server.  
   
 CF Framework:  
