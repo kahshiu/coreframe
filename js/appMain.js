@@ -15,7 +15,7 @@ Templater.getPlaceholders = function (template,config) {
         stopper2 = template.search(config.interpolation[1])+config.interpolation[1].length;
 
         if(stopper1 == -1 || stopper2 == -2) break;;
-        if(stopper1>stopper2) throw "Imbalanced interpolation signs";
+        if(stopper1>stopper2) throw "Templater.getPlaceholders: Imbalanced interpolation signs";
 
         if( !(config.setting == 'strict' && stopper2-stopper1 == sumLength) ){
             placeholders.push(template.slice(stopper1,stopper2))
@@ -38,7 +38,6 @@ Templater.compileTemplate = function (template,$data,$index,$parent,$root){
 
     //if(_.isArray($data)) {
     if(Object.prototype.toString.call( $data ) === '[object Array]') {
-        //console.log($root)
         for(j=0;j<$data.length;j++){
             if($root === undefined) $root = $data;
             frag = frag + Templater.compileTemplate(template,$data[j],j,$parent,$root);
@@ -96,6 +95,8 @@ Templater.compileEach = function (arr){
 
 /******** Validate ********/
 var Validate = Validate || {}
+
+// validate datatype
 Validate.isBoolean = function (obj) {
     return Object.prototype.toString.call(obj) === "[object Boolean]";
 }
@@ -126,28 +127,45 @@ Validate.isArray = function (obj) {
 Validate.isObject = function (obj) {
     return Object.prototype.toString.call(obj) === "[object Object]";
 }
-Validate.isTextDateObj = function (obj) {
-    //todo: validate text to date obj
-    return true
+
+// rudimentary checking
+Validate.isInit = function (val,params) {
+    return val!==undefined && val!==null && val!="";
+}
+Validate.isRequired = function (val,params) {
+    return Validate.isNumber(val) || (Validate.isString(val)&&val.length>0);
 }
 
-//
-Validate.isRequired = function (obj) {
-    return obj!==undefined && obj!==null && ( Validate.isNumber(obj) || (Validate.isString(obj)&&obj.length>0) )
+// validate pattern
+Validate.isPattern = function (val,params) {
+    params = params || {};
+    if( !Validate.isInit(val) || !Validate.isInit(params.regex) ) return false;
+    return new RegExp(params.regex, params.flags||"").test(val)
 }
-Validate.isLater = function (obj,bar,includeDay,format) {
-    includeDay = includeDay || true
-    obj = Util.toDateObj(obj,format)
-    bar = Util.toDateObj(bar,format)
-    return (includeDay && obj>=bar) || (!includeDay && obj>bar)
+Validate.isTextDate = function (val,params) {
+    params = params || {}
+    if( !Validate.isInit(val) ) return false;
+    params.regex = params.regex|| "\\d{1,2}[/-\\s]\\d{1,2}[/-\\s]\\d{4}";
+    return Validate.isPattern(val,{regex:params.regex})
+}
+
+Validate.isLater = function (val,params) {
+    params = params || {}
+    params.includeDay = params.includeDay || true
+
+    if( !Validate.isTextDate(val,{regex:params.regex}) || !Validate.isTextDate(params.dateCompare,{regex:params.regex}) ) return false;
+
+    val = Util.toDateObj(val,params.format)
+    params.dateCompare = Util.toDateObj(params.dateCompare,params.format)
+    //return (includeDay && val>=params.dateCompare) || (!includeDay && val>params.dateCompare)
 }
 Validate.isEarlier = function (obj,bar,includeDay,format) {
-    includeDay = includeDay || true;
-    obj = Util.toDateObj(obj,format)
-    bar = Util.toDateObj(bar,format)
-    return (includeDay && obj<=bar) || (!includeDay && obj<bar)
+    //includeDay = includeDay || true;
+    //obj = Util.toDateObj(obj,format)
+    //bar = Util.toDateObj(bar,format)
+    //return (includeDay && obj<=bar) || (!includeDay && obj<bar)
 }
-//
+
 Validate.isCurrency = function (obj) {
     var i,obj = obj.toString()
         ,result = false 
@@ -161,6 +179,7 @@ Validate.isCurrency = function (obj) {
     }
     return result;
 }
+
 Validate.element = function (el) {
     var flag;
 
@@ -215,36 +234,6 @@ Validate.element = function (el) {
     return flag;
 }        
 
-
-
-
-
-
-
-
-
-
-
-// consider moving to util
-Validate.cleanCurrency = function (obj,decimal) {
-    var index, length, pre, post, decimal = decimal || 2, result = "";
-    if(Validate.isCurrency(obj)){
-        obj = parseFloat( obj.toString().replace(/\,/g,"") );              //normalise to int
-        obj = Math.round( obj.toFixed(decimal+4)*Math.pow(10,decimal) ); //truncate with percision of additional 4 decimal points
-        obj = obj.toString();
-
-        if(obj == "0") { pre = "0"; post="00" }
-        else {
-            pre = obj.slice(0,obj.length-2);
-            post = obj.slice(-2);
-            length = pre.length;
-            while(length>3) { length = length-3; pre = pre.slice(0,length) + "," + pre.slice(length); };
-        }
-        result =  pre + "." + post; 
-    }
-    return result;
-}
-
 // generate functions to validate elements
 //generate obj with array of elements to hold result
 // validation object
@@ -271,62 +260,64 @@ Validate.cleanCurrency = function (obj,decimal) {
 function Checker (config){
     var config = config || {};
 
-    this.options
-    this.msgClassName = config.msgClassName || "";
-    this.elClassName = config.elClassName || "";
-    this.errTemplate = config.template || '<span message class="{{$data.msgClassName}}" id="{{$data.msgId}}"></span>';
-    this.errMessage = "";
-    this.errMessages = [];
-    this.defMessages = {}
-    this.defMessages.isRequired = "{{$data.$el.id}} is required."
+    this.options;
+    this.isValid = true;
+    this.isStopped = false;
 
-    this.flag = true;
-    this.lazy = true; // stop with first flag of false
+    this.messages = {};
+    this.messages.isRequired = "{{$data.$el.id}} is required.";
+
+    this.template = config.template||'<span message id="{{$data.messageId}}" class="{{$data.messageClassName}}"></span>';
+    this.messageIdPrefix = config.messageIdPrefix||"validate$";
+    this.messageClassName = config.messageClassName||"";
+    this.message = "";
+
+    return this;
 }
 // checker: reset variables
 Checker.prototype.using = function ($options) {
     this.options = $options || {};
-    this.errMessage = "";
-    this.errMessages = [];
-    this.flag = true;
+    this.isValid = true;
+    this.isStopped = false;
+    this.message = "";
     return this;
 }
 // checker: enforce rules 
-Checker.prototype.enforce = function (rule,params,$message,$options) {
-    if (!this.flag && this.lazy) { return this; }
+Checker.prototype.enforce = function (rule,$message,$options) {
+    if( this.isStopped ) return this;
 
+    rule = rule || {};
+    rule.params = rule.params || {};
+
+    if( !rule.name ) throw "Checker.enforce: rule name is required";
+    $message = $message || this.messages[rule.name];
     $options = $options || this.options;
-    this.flag = this.flag && (Validate.hasOwnProperty(rule)? Validate[rule]($options.$val):true); 
-    this.registerMessage(rule,$message,$options);
+    rule.val = rule.val || $options.$val || ""; // note: rule.val: string value/ array
+
+    if( !Validate.isInit(rule.val) ) { 
+        this.isValid = true;
+        this.isStopped = true;
+        return this; 
+    }
+
+    this.isValid = this.isValid && (Validate.hasOwnProperty(rule)? Validate[rule](rule.val,rule.params):true); 
+    if (!this.isValid) {
+        this.message = $message;
+        this.isStopped = true
+    }
     return this;
 }
-Checker.prototype.registerMessage = function (rule,$message,$options) {
-    if (!this.flag) {
-        var message = Templater.compileTemplate( $message||this.defMessages.hasOwnProperty(rule)?this.defMessages[rule]:"",$options);
-        this.errMessage = message;
-        this.errMessages.push(message);
-    }
-}
 // checker: render element/ determine content
-Checker.prototype.render = function (template,$data) {
-    if( this.options && this.options.hasOwnProperty("$el") ) { 
-        if(!this.options.$el.hasAttribute("validateId")){
-            $data = $data || {};
-            $data.msgClassName = 
-                $data.msgClassName!==undefined 
-                && $data.msgClassName!==null 
-                && $data.msgClassName!==""? $data.msgClassName:
-                this.msgClassName!==undefined 
-                && this.msgClassName!==null 
-                && this.msgClassName!==""? this.msgClassName: "";
-            $data.msgId = 
-                $data.msgId!==undefined 
-                && $data.msgId!==null 
-                && $data.msgId!==""? $data.msgId: _.uniqueId("validate$");
-            this.options.$el.setAttribute("validateId",$data.msgId);
+Checker.prototype.render = function ($template,$data) {
+    if( !(this.options && this.options.$el) ) return this;
 
+    if( !this.options.$el.hasAttribute("validateId") ){
+            $data = $data || {};
+            $data.messageClassName = $data.messageClassName || this.messageClassName || "";
+            $data.messageId = $data.messageId || _uniqueId($data.messageIdPrefix||this.messageIdPrefix);
+            this.options.$el.setAttribute("validateId",$data.messageId);
             $(this.options.$el.parentNode).append(
-                Templater.compileTemplate( template||this.errTemplate,$data ) 
+                Templater.compileTemplate( $template||this.template,$data ) 
             );
         }
         // write message
@@ -336,141 +327,206 @@ Checker.prototype.render = function (template,$data) {
             errorEl.innerHTML = "";
         } else {
             errorEl.style.display = "initial";
-            errorEl.innerHTML = this.errMessage;
+            errorEl.innerHTML = this.message;
         }
-    }
     return this; 
 }
 
 
 /******** Utilities ********/
 var Util = Util || {}
-Util.dateDiff = function (datePart,startDate,endDate) {
-
-}
 Util.setRange = function (targetNum,minbase,maxbase){
     var temp;
     if(maxbase) temp = Math.min(targetNum,maxbase);
     if(minbase) temp = Math.max(targetNum,minbase);
     return temp;
 }
-Util.zeroPadding = function (targetNum,padCount,mode) {
-    var targetNum = targetNum.toString(), count = padCount, padding = "", mode = mode || "pre", result;
-    if(targetNum.length == padCount) return targetNum;
-    while(count>0){ padding = padding+"0"; count--; }
+Util.padding = function (target,padCount,mode,padder) {
+    var padder = padder || (Validate.isString(target)?"x":"0")
+        ,target = target.toString()
+        , count = padCount
+        , mode = mode || "pre"
+        , pads = ""
+        , result;
+    if(target.length >= padCount) return target;
+    while(count>0){ pads = pads+padder; count--; }
     if(mode == "pre") {
-        result = (padding+targetNum).slice(-1*padCount);
+        result = (pads+target).slice(-1*padCount);
     } else {
-        result = (targetNum+padding).slice(0,padCount);
+        result = (target+pads).slice(0,padCount);
     }
     return result;
 }
-Util.getImposed = function (text,pattern,keys) {
+// positive search for d/w chars in pattern
+Util.padPattern = function (target,pattern,mode,padder) {
+    var i
+        ,prevPos=-1,nextPos=0
+        ,prevPos2=-1,nextPos2=0
+        ,frag,result=target.slice(0);
+    while(nextPos>-1) {
+        nextPos = pattern.slice(prevPos+1).search(/[^dw]/); 
+        if(nextPos>-1) {}
+        nextPos2 = result.search(pattern[nextPos]);
+        frag = result.slice(nextPos2);
+        result = Util.padding(
+                result.substring(prevPos2+1,nextPos2)
+                ,nextPos2-Math.min(0,prevPos2)
+                ,mode
+                ,padder
+                ) + frag;
+        prevPos = nextPos; 
+        prevPos2 = nextPos; 
+    }
+    return result;
+}
+Util.superImpose = function (text,pattern,keys) {
     var i,index,temp,result;
     temp = {};
     result = {};
     for(i=0; i<keys.length; i++){
-        index = 0;
         result[keys[i]] = [];
+        index = 0;
+        temp.text = text.substring(index);
+        temp.pattern = pattern.substring(index);
+
         while (index>-1) {
-            temp.text = text.substring(index);
-            temp.pattern = pattern.substring(index);
             index = temp.pattern.search(keys[i]);
             if(index<0) break;
+
             result[keys[i]].push( temp.text.slice(index,index+keys[i].length) );
             index = index+keys[i].length; 
-            if(index>=temp.pattern.length) break;
+            temp.text = temp.text.substring(index);
+            temp.pattern = temp.pattern.substring(index);
+            if(temp.text.length==0||temp.pattern==0) break;
         }
     }
     return result;
 }
+
 Util.toDateText = function (dateObj,format) {
     if(!Validate.isDate(dateObj)) return;
-    var dd = Util.zeroPadding(dateObj.getDate(),2)
-        ,mm = Util.zeroPadding(dateObj.getMonth()+1,2)
-        ,yy = Util.zeroPadding(dateObj.getFullYear(),2)
-        ,yyyy = Util.zeroPadding(dateObj.getFullYear(),4)
+    var dd = Util.padding(dateObj.getDate(),2,undefined,"0")
+        ,mm = Util.padding(dateObj.getMonth()+1,2,undefined,"0")
+        ,yy = Util.padding(dateObj.getFullYear(),2,undefined,"0")
+        ,yyyy = Util.padding(dateObj.getFullYear(),4,undefined,"0")
         ,format = format || "dd/mm/yyyy";
     return format.replace(/dd/g,dd).replace(/mm/g,mm).replace(/yyyy/g,yyyy).replace(/yy/g,yy);
 }
 Util.toDateObj = function (dateText,format) {
     var year=""
         ,format = format || "dd/mm/yyyy"
-        ,temp = Util.getImposed(dateText,format,["dd","mm","yyyy","yy"]);
+        ,temp = Util.superImpose(dateText,format,["dd","mm","yyyy","yy"]);
     if(temp.yyyy.length > 0) year=temp.yyyy[0];
     else if(temp.yy.length > 0) year=temp.yy[0];
+    temp.mm[0] = parseInt(temp.mm[0]);
+    temp.dd[0] = parseInt(temp.dd[0]);
     return new Date(year,temp.mm[0]-1,temp.dd[0]);
 }
+
+
+// support datepart: yyyy,mm,dd,ww,hh,mi,ss
+Util.datePortion = function (dateObj,datepart) {
+    datepart = datepart || "ss"
+    var epoch = new Date(1970,0,1);
+    var yyyy=dateObj.getFullYear()
+    ,mm=dateObj.getMonth()
+    ,dd=dateObj.getDate()
+    ,day=dateObj.getDay()
+    ,ww=Math.ceil( (new Date().getTime()-epoch.getTime()-day*24*60*60*1000) / (7*24*60*60*1000) )
+    ,hh=dateObj.getHours()
+    ,mi=dateObj.getMinutes()
+    ,ss=dateObj.getSeconds()
+    ,ms=dateObj.getMilliseconds()
+    ,portions = [yyyy,(mm/12),(hh/24),(mi/60),(ss/60),(ms/1000)]
+    ,result
+    if(datepart=="yyyy") result=[yyyy,mm/12];
+    else if(datepart=="mm") result=[mm,dd/(new Date(yyyy,mm,0).getDate())];
+    else if(datepart=="dd") result=[dd,hh/24];
+    else if(datepart=="ww") result=[ww,day/7];
+    else if(datepart=="hh") result=[hh,mi/60];
+    else if(datepart=="mi") result=[mi,ss/60];
+    else if(datepart=="ss") result=[ss,ms/1000];
+    return result; 
+}
+Util.dateDiff = function (begin,end,datepart) {
+    var calc
+        ,portion1=Util.datePortion(begin)
+        ,portion2=Util.datePortion(end)
+        ,reversed=false
+        ,diff = end.getTime() - begin.getTime();
+    datepart = datepart || 'ss';
+
+    calc = portion1[0]-portion2[0]
+        Math.round(1-portion1[1]) 
+        + Math.round(portion2[1])
+
+    //if(datepart == "mm"){ calc = diff/(60*1000)
+    //} else if(datepart == "hh"){ calc = diff/(60*60*1000)
+    //} else if(datepart == "dd"){ calc = diff/(24*60*60*1000)
+    //} else if(datepart == "ww"){ 
+    //    // half weeks
+    //    calc = diff/(7*24*60*60*1000)
+    //} else if(datepart == "mm"){ 
+    //    year1=begin.getFullYear(); year2=end.getFullYear();
+    //    month1=begin.getMonth()+1; month2=end.getMonth()+1; 
+
+    //    if(year1==year2){
+    //        calc = month2-month1;
+    //    } else {
+    //        calc = 0;
+    //        //if begin/end date reversed sequence
+    //        if(year2<year1) { 
+    //            year1 = end.getFullYear(); year2 = begin.getFullYear(); 
+    //            month1 = end.getMonth()+1; month2 = begin.getMonth()+1; 
+    //            reversed=true;
+    //        }
+    //        calc = (year2-year1)*12 + 12-month1 + month2;
+    //        calc = calc * (reversed?-1:1);
+    //    }
+    //} else if(datepart == "yyyy"){ calc = end.getFullYear() - begin.getFullYear()
+    //} else { calc = diff/(1000);
+    //}
+
+    return Math.round(calc)
+}
+Util.textDateDiff = function (begin,end,datepart) {
+    begin = Util.toDateObj(begin);
+    end = Util.toDateObj(end);
+    return Util.dateDiff(begin,end,datepart);
+}
+Util.dateCompare = function (begin,end,datepart) {
+    //datepart = 
+    //if(datepart)
+}
+// consider moving to util
+Util.cleanCurrency = function (obj,decimal) {
+    var index, length, pre, post, decimal = decimal || 2, result = "";
+    if(Validate.isCurrency(obj)){
+        obj = parseFloat( obj.toString().replace(/\,/g,"") );              //normalise to int
+        obj = Math.round( obj.toFixed(decimal+4)*Math.pow(10,decimal) ); //truncate with percision of additional 4 decimal points
+        obj = obj.toString();
+
+        if(obj == "0") { pre = "0"; post="00" }
+        else {
+            pre = obj.slice(0,obj.length-2);
+            post = obj.slice(-2);
+            length = pre.length;
+            while(length>3) { length = length-3; pre = pre.slice(0,length) + "," + pre.slice(length); };
+        }
+        result =  pre + "." + post; 
+    }
+    return result;
+}
+
+
+
+
 Util.maxDate = function (dateObj1,dateObj2) {
     return ( dateObj1.getTime()<dateObj2.getTime() )? dateObj2: dateObj1;
 }
 Util.maxDateText = function (dateText1,dateText2,format) {
     return Util.maxDate(Util.toDateObj(dateText1,format),Util.toDateObj(dateText2,format));
 }
-/*Templater.compileTemplate = function (template,$data,$index,$parent,$root){
-    var i=0;
-    var j=0;
-    var hldr,frag="";
-    var expr,expr0,expr1,expr1curr,expr1fn,expr1param1,expr1param2,expr1param3,expr1param4,expr1param5;
-
-    //if(_.isArray($data)) {
-    if(Object.prototype.toString.call( $data ) === '[object Array]') {
-        //console.log($root)
-        for(j=0;j<$data.length;j++){
-            if($root === undefined) $root = $data;
-            frag = frag + Templater.compileTemplate(template,$data[j],j,$parent,$root);
-        }
-    }else{
-        hldr = Templater.getPlaceholders(template,{keys:true})
-        frag = template.slice(0)
-        $root = $root||$data
-        for(i=0;i<hldr.brac.length;i++){
-            expr = hldr.expr[i].split("|");
-            expr0 = expr[0];
-            expr1 = expr[1];
-
-// evaluate expression
-            val = (new Function(
-                "$data"
-                ,"$index"
-                ,"$parent"
-                ,"$root"
-                ,'var result={{expr}};if(result===undefined || result===null) {result=""}; return result'.replace("{{expr}}",expr0)
-            ))( $data,$index,$parent,$root );
-
-// evaluate fn on expression
-            if(expr1) {
-                expr1 = expr1.split(",")
-                for(m=0;m<expr1.length;m++){
-                    expr1fn = expr1[m];
-                    expr1param1 = val;
-                    expr1param2 = $data;
-                    expr1param3 = $index;
-                    expr1param4 = $parent;
-                    expr1param5 = $root;
-                    val = (new Function (
-                        "$val"
-                        ,"$data"
-                        ,"$index"
-                        ,"$parent"
-                        ,"$root"
-                        ,'var result=window.{{expr}}($val,$data,$index,$parent,$root);if(result===undefined || result===null) {result=""}; return result'.replace("{{expr}}",expr1fn)
-                    ))( expr1param1,expr1param2,expr1param3,expr1param4,expr1param5 );
-                }
-            }
-            frag = frag.replace(hldr.brac[i],val);
-        }
-    }
-    return frag;
-}          
-
-Templater.compileEach = function (arr){
-    var i, total = "";
-    for(i=0; i<arr.length; i++){
-    }
-    return total;
-}
-*/
 
 /******** DatePicker *******/
 function DatePicker (templates) {
@@ -534,7 +590,7 @@ DatePicker.prototype.updateTarget = function () {
     //}
 }
 DatePicker.prototype.readTarget = function (dateText) {
-    if( Validate.isTextDateObj(dateText) ){
+    if( Validate.isTextDate(dateText) ){
         this.dateObj = Util.toDateObj(dateText);
     } else {
         this.dateObj = new Date();
