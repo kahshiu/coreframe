@@ -380,7 +380,6 @@ Util.padPattern = function (target,pattern,mode,padder) {
 
         delim.pos = pattern.substring(pat.pos1).search(re);
         pat.pos2 = delim.pos>-1? (pat.pos1+delim.pos):pattern.length;
-
         delim.ch = pattern.substr(pat.pos2,clength);
         diff = pat.pos2-pat.pos1
 
@@ -393,9 +392,10 @@ Util.padPattern = function (target,pattern,mode,padder) {
 
         if(t.pos2>t.pos1) {
             frag = target.substring(t.pos1,t.pos2);
-            frag = Util.padding(frag,diff,mode,padder||Validate.isNumable(frag)?"0":"x")
-            target = target.substring(0,t.pos1) + frag + target.substring(t.pos2);
-            t.pos1 = t.pos2 + clength + (diff-1)
+            target = target.substring(0,t.pos1) 
+                    + Util.padding(frag,diff,mode,padder||Validate.isNumable(frag)?"0":"x")
+                    + target.substring(t.pos2);
+            t.pos1 = Math.max(t.pos1+frag.length-1,t.pos2+clength) 
         }
         pat.pos1 = pat.pos2 + clength
     }
@@ -447,7 +447,6 @@ Util.toDateObj = function (dateText,format) {
     temp.dd[0] = parseInt(temp.dd[0]);
     return new Date(year,temp.mm[0]-1,temp.dd[0]);
 }
-
 
 // support datepart: yyyy,mm,dd,ww,hh,mi,ss
 Util.datePortion = function (dateObj,datepart) {
