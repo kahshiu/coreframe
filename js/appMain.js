@@ -127,6 +127,9 @@ Validate.isArray = function (obj) {
 Validate.isObject = function (obj) {
     return Object.prototype.toString.call(obj) === "[object Object]";
 }
+Validate.isNumable = function (obj) {
+    return !isNaN(+obj);
+}
 
 // rudimentary checking
 Validate.isInit = function (val,params) {
@@ -359,25 +362,45 @@ Util.padding = function (target,padCount,mode,padder) {
 }
 // positive search for d/w chars in pattern
 Util.padPattern = function (target,pattern,mode,padder) {
-    var i
-        ,prevPos=-1,nextPos=0
-        ,prevPos2=-1,nextPos2=0
-        ,frag,result=target.slice(0);
-    while(nextPos>-1) {
-        nextPos = pattern.slice(prevPos+1).search(/[^dw]/); 
-        if(nextPos>-1) {}
-        nextPos2 = result.search(pattern[nextPos]);
-        frag = result.slice(nextPos2);
-        result = Util.padding(
-                result.substring(prevPos2+1,nextPos2)
-                ,nextPos2-Math.min(0,prevPos2)
-                ,mode
-                ,padder
-                ) + frag;
-        prevPos = nextPos; 
-        prevPos2 = nextPos; 
+    if(!Validate.isInit(target) || !Validate.isInit(pattern)) return "";
+
+    var t={},pat={},delim={}
+        ,clength=1
+        ,tlength=target.length
+        ,re=/[^a-zA-Z0-9]/,frag,diff;
+    result = target.slice(0);
+    t.pos1 = 0; 
+    t.pos2 = 0;
+    pat.pos1 = 0; 
+    pat.pos2 = 0;
+    delim.pos = -1;
+    delim.ch = "";
+
+    while(t.pos1<target.length && pat.pos1<pattern.length) {
+
+        delim.pos = pattern.substring(pat.pos1).search(re);
+        pat.pos2 = delim.pos>-1? (pat.pos1+delim.pos):pattern.length;
+
+        delim.ch = pattern.substr(pat.pos2,clength);
+        diff = pat.pos2-pat.pos1
+
+        if(delim.ch=="") {
+            delim.pos = target.substring(t.pos1).search(re);
+            t.pos2 = delim.pos>-1? (t.pos1+delim.pos):target.length;
+        } else {
+            t.pos2 = delim.ch!=""? ( t.pos1+target.substring(t.pos1).search(delim.ch) ):target.length;
+        }
+
+        if(t.pos2>t.pos1) {
+            frag = target.substring(t.pos1,t.pos2);
+            frag = Util.padding(frag,diff,mode,padder||Validate.isNumable(frag)?"0":"x")
+            target = target.substring(0,t.pos1) + frag + target.substring(t.pos2);
+            t.pos1 = t.pos2 + clength + (diff-1)
+        }
+        pat.pos1 = pat.pos2 + clength
     }
-    return result;
+
+    return target;
 }
 Util.superImpose = function (text,pattern,keys) {
     var i,index,temp,result;
@@ -415,7 +438,9 @@ Util.toDateText = function (dateObj,format) {
 Util.toDateObj = function (dateText,format) {
     var year=""
         ,format = format || "dd/mm/yyyy"
-        ,temp = Util.superImpose(dateText,format,["dd","mm","yyyy","yy"]);
+        ,temp;
+    temp = Util.padPattern(dateText,format,undefined,undefined);
+    temp = Util.superImpose(temp,format,["dd","mm","yyyy","yy"]);
     if(temp.yyyy.length > 0) year=temp.yyyy[0];
     else if(temp.yy.length > 0) year=temp.yy[0];
     temp.mm[0] = parseInt(temp.mm[0]);
