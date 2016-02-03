@@ -440,7 +440,6 @@ Util.toDateObj = function (dateText,format) {
     return new Date(year,temp.mm[0]-1,temp.dd[0]);
 }
 
-
 // support datepart: yyyy,mm,dd,ww,hh,mi,ss
 Util.datePortion = function (dateObj,datepart) {
     datepart = datepart || "ss"
