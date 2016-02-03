@@ -127,6 +127,9 @@ Validate.isArray = function (obj) {
 Validate.isObject = function (obj) {
     return Object.prototype.toString.call(obj) === "[object Object]";
 }
+Validate.isNumable = function (obj) {
+    return !isNaN(+obj);
+}
 
 // rudimentary checking
 Validate.isInit = function (val,params) {
@@ -359,25 +362,37 @@ Util.padding = function (target,padCount,mode,padder) {
 }
 // positive search for d/w chars in pattern
 Util.padPattern = function (target,pattern,mode,padder) {
-    var i
-        ,prevPos=-1,nextPos=0
-        ,prevPos2=-1,nextPos2=0
-        ,frag,result=target.slice(0);
-    while(nextPos>-1) {
-        nextPos = pattern.slice(prevPos+1).search(/[^dw]/); 
-        if(nextPos>-1) {}
-        nextPos2 = result.search(pattern[nextPos]);
-        frag = result.slice(nextPos2);
-        result = Util.padding(
-                result.substring(prevPos2+1,nextPos2)
-                ,nextPos2-Math.min(0,prevPos2)
-                ,mode
-                ,padder
-                ) + frag;
-        prevPos = nextPos; 
-        prevPos2 = nextPos; 
+    if(!Validate.isInit(target) || !Validate.isInit(pattern)) return "";
+    //todo: reject if pattern not match
+
+    var t={},p={},frag={}
+        ,clength=1
+        ,re=/[^a-zA-Z0-9]/ 
+        ,result = target.slice(0);
+
+    t.pos1 = 0; t.pos2 = 0; t.dpos = -1; t.dchr = "";
+    p.pos1 = 0; p.pos2 = 0; p.dpos = -1; p.dchr = "";
+
+    while( t.pos1<target.length && p.pos1<pattern.length ) {
+        p.dpos = pattern.substring(p.pos1).search(re);
+        p.dchr = pattern.charAt(p.dpos);
+        p.pos2 = p.dpos>-1? (p.pos1+p.dpos):pattern.length;
+        padLen = p.pos2 - p.pos1;
+
+        t.dpos = target.substring(t.pos1).search(re);
+        t.dchr = target.charAt(t.dpos);
+        t.pos2 = t.dpos>-1? (t.pos1+t.dpos):target.length;
+
+        frag.raw = target.substring(t.pos1,t.pos2);
+        frag.padded = Util.padding(frag.raw,padLen,mode,Validate.isNumable(frag.raw)?"0":"x");
+
+        target = target.substring(0,t.pos1) + frag.padded + target.substring(t.pos2)
+
+        t.pos1 = t.pos1 + Math.max(frag.raw.length,frag.padded.length) + (t.dpos>-1?clength:0);
+        p.pos1 = p.pos2 + (p.dpos>-1?clength:0);
     }
-    return result;
+
+    return target;
 }
 Util.superImpose = function (text,pattern,keys) {
     var i,index,temp,result;
@@ -415,7 +430,9 @@ Util.toDateText = function (dateObj,format) {
 Util.toDateObj = function (dateText,format) {
     var year=""
         ,format = format || "dd/mm/yyyy"
-        ,temp = Util.superImpose(dateText,format,["dd","mm","yyyy","yy"]);
+        ,temp;
+    temp = Util.padPattern(dateText,format,undefined,undefined);
+    temp = Util.superImpose(temp,format,["dd","mm","yyyy","yy"]);
     if(temp.yyyy.length > 0) year=temp.yyyy[0];
     else if(temp.yy.length > 0) year=temp.yy[0];
     temp.mm[0] = parseInt(temp.mm[0]);
@@ -439,6 +456,7 @@ Util.datePortion = function (dateObj,datepart) {
     ,ms=dateObj.getMilliseconds()
     ,portions = [yyyy,(mm/12),(hh/24),(mi/60),(ss/60),(ms/1000)]
     ,result
+
     if(datepart=="yyyy") result=[yyyy,mm/12];
     else if(datepart=="mm") result=[mm,dd/(new Date(yyyy,mm,0).getDate())];
     else if(datepart=="dd") result=[dd,hh/24];
@@ -450,15 +468,15 @@ Util.datePortion = function (dateObj,datepart) {
 }
 Util.dateDiff = function (begin,end,datepart) {
     var calc
-        ,portion1=Util.datePortion(begin)
-        ,portion2=Util.datePortion(end)
+        ,portion1=Util.datePortion(begin,datepart)
+        ,portion2=Util.datePortion(end,datepart)
         ,reversed=false
         ,diff = end.getTime() - begin.getTime();
     datepart = datepart || 'ss';
 
-    calc = portion1[0]-portion2[0]
-        Math.round(1-portion1[1]) 
-        + Math.round(portion2[1])
+    calc = portion2[0]-portion1[0]
+        + Math.floor(portion1[1]) 
+        + Math.ceil(portion2[1])
 
     //if(datepart == "mm"){ calc = diff/(60*1000)
     //} else if(datepart == "hh"){ calc = diff/(60*60*1000)
@@ -913,3 +931,4 @@ Tab.decodeTabState = function (url) {
     // Tab.create = function (config) {
     //
     // }
+
