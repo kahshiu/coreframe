@@ -338,12 +338,54 @@ Checker.prototype.render = function ($template,$data) {
 
 /******** Utilities ********/
 var Util = Util || {}
+// name: setRange
+// args:
+// -- target: number in question
+// -- minbase/ maxbase: left and right boundaries to restrict target in
+// return: bounded number
+// exmp:
+// Util.setRange(-4,1,10) --> 1
+// Util.setRange(15,1,10) --> 10
+// Util.setRange(6,1,10) --> 6
 Util.setRange = function (targetNum,minbase,maxbase){
-    var temp;
-    if(maxbase) temp = Math.min(targetNum,maxbase);
-    if(minbase) temp = Math.max(targetNum,minbase);
-    return temp;
+    if(maxbase) targetNum = Math.min(targetNum,maxbase);
+    if(minbase) targetNum = Math.max(targetNum,minbase);
+    return targetNum;
 }
+// name: circShift
+// args:
+// -- array: array to shift,returns copy 
+// -- motion: -ve:left, +ve:right
+// return: copy of array shifted 
+// exmp:
+// Util.circShift([1,2,3,4,5,6],-2) --> [3, 4, 5, 6, 1, 2]
+// Util.circShift([1,2,3,4,5,6],2) --> [5, 6, 1, 2, 3, 4]
+Util.circShift = function (array,motion) {
+    motion = motion || 0;
+    if(motion==0) return array.slice(0);
+
+    result = array.slice(0);
+    for (var i=0;i<Math.abs(motion);i++) {
+        if(motion<0) {
+            result.push(result.shift());
+        } else {
+            result.unshift(result.pop());
+        }
+    }
+    return result;
+}
+// name: padding
+// args:
+// -- target   : number, string to pad
+// -- padCount : padding count
+// -- mode     : padding pre/post of target [default: "pre"]
+// -- padder   : character to pad with, [default: if number:"0", if string:"x" ]
+// return:
+// all padded result is string
+// exmp:
+// -- Util.padding(1000,2), result:1000
+// -- Util.padding(10,4), result:0010
+// -- Util.padding(10,4,"post","x"), result:10xx
 Util.padding = function (target,padCount,mode,padder) {
     var padder = padder || (Validate.isString(target)?"x":"0")
         ,target = target.toString()
@@ -360,10 +402,23 @@ Util.padding = function (target,padCount,mode,padder) {
     }
     return result;
 }
-// positive search for d/w chars in pattern
+// name: padPattern
+// padding target according to desired pattern
+// args:
+// -- target  : string
+// -- pattern : string pattern in alphanumeric characters only, all symbols are delimiters
+// -- mode    : pre/post padding
+// -- padder  : standard padding char
+// return:
+// padded string
+// exmp:
+// Util.padPattern("1/1/1","000/000/00") --> "001/001/01"
+// Util.padPattern("10000/1/1","000/000/00") --> "10000/001/01"
+// Util.padPattern("10000/1/1","000/000") --> "10000/001/1"
+// Util.padPattern("10000/1","000/000/00") --> "10000/001"
 Util.padPattern = function (target,pattern,mode,padder) {
     if(!Validate.isInit(target) || !Validate.isInit(pattern)) return "";
-    //todo: reject if pattern not match
+    //TODO: reject if pattern not match
 
     var t={},p={},frag={}
         ,clength=1
@@ -394,6 +449,19 @@ Util.padPattern = function (target,pattern,mode,padder) {
 
     return target;
 }
+// name: superImpose 
+// extract data using pattern as mask
+// args: 
+// -- text    : data
+// -- pattern : used as mask
+// -- keys    : keys in mask
+// return:
+// collection of arrays with args.keys as key 
+// exmp:
+// Util.superImpose("12-asdf-2020","dd-cccc-yyyyy",["dd","cc","yyyy"]) -->
+// dd: ["12"]
+// cc: ["as","df"]
+// yyyy: ["2020"]
 Util.superImpose = function (text,pattern,keys) {
     var i,index,temp,result;
     temp = {};
@@ -417,7 +485,12 @@ Util.superImpose = function (text,pattern,keys) {
     }
     return result;
 }
-
+// name: toDateText
+// args:
+// -- dateObj: js date obj 
+// -- format: date formating (dd,mm,yy,yyyy) [default: "dd/mm/yyyy"]
+// return:
+// text representation of date obj
 Util.toDateText = function (dateObj,format) {
     if(!Validate.isDate(dateObj)) return;
     var dd = Util.padding(dateObj.getDate(),2,undefined,"0")
@@ -427,6 +500,12 @@ Util.toDateText = function (dateObj,format) {
         ,format = format || "dd/mm/yyyy";
     return format.replace(/dd/g,dd).replace(/mm/g,mm).replace(/yyyy/g,yyyy).replace(/yy/g,yy);
 }
+// name: toDateObj
+// args:
+// -- datetext: date of text  
+// -- format: format of datetext (dd,mm,yy,yyyy) [default: "dd/mm/yyyy"]
+// return:
+// js date obj of text representation
 Util.toDateObj = function (dateText,format) {
     var year=""
         ,format = format || "dd/mm/yyyy"
@@ -439,22 +518,28 @@ Util.toDateObj = function (dateText,format) {
     temp.dd[0] = parseInt(temp.dd[0]);
     return new Date(year,temp.mm[0]-1,temp.dd[0]);
 }
-
-// support datepart: yyyy,mm,dd,ww,hh,mi,ss
-Util.datePortion = function (dateObj,datepart) {
-    datepart = datepart || "ss"
+// name: datePortion 
+// args: 
+// -- datepart: supports yyyy,mm,dd,ww,hh,mi,ss
+// -- dateobj: js dateobj
+// -- indexing: object keys: mmIndex, dayIndex, firstDay (shift motion: -ve:left, +ve:right)
+// return:
+// selected dateport of js date obj
+Util.datePortion = function (datepart,dateObj,indexing) {
+    datepart = datepart || "ss";
+    indexing = indexing || {};
     var epoch = new Date(1970,0,1);
-    var yyyy=dateObj.getFullYear()
-    ,mm=dateObj.getMonth()
-    ,dd=dateObj.getDate()
-    ,day=dateObj.getDay()
-    ,ww=Math.ceil( (new Date().getTime()-epoch.getTime()-day*24*60*60*1000) / (7*24*60*60*1000) )
-    ,hh=dateObj.getHours()
-    ,mi=dateObj.getMinutes()
-    ,ss=dateObj.getSeconds()
-    ,ms=dateObj.getMilliseconds()
-    ,portions = [yyyy,(mm/12),(hh/24),(mi/60),(ss/60),(ms/1000)]
-    ,result
+    var dateSeq = Util.circShift([0,1,2,3,4,5,6],indexing.firstDay)
+        ,yyyy = dateObj.getFullYear()
+        ,mm  = (indexing.mmIndex?1:0) + dateObj.getMonth()
+        ,day = (indexing.dayIndex?1:0) + dateSeq[ dateObj.getDay() ] 
+        ,dd  = dateObj.getDate()
+        ,ww  = Math.floor( (dateObj.getTime()-epoch.getTime()-day*24*60*60*1000) / (7*24*60*60*1000) )
+        ,hh  = dateObj.getHours()
+        ,mi  = dateObj.getMinutes()
+        ,ss  = dateObj.getSeconds()
+        ,ms  = dateObj.getMilliseconds()
+        ,result
 
     if(datepart=="yyyy") result=[yyyy,mm/12];
     else if(datepart=="mm") result=[mm,dd/(new Date(yyyy,mm,0).getDate())];
@@ -463,58 +548,61 @@ Util.datePortion = function (dateObj,datepart) {
     else if(datepart=="hh") result=[hh,mi/60];
     else if(datepart=="mi") result=[mi,ss/60];
     else if(datepart=="ss") result=[ss,ms/1000];
-    return result; 
+    else if(datepart=="js") result=[dateObj.getTime()];
+    return result;
 }
-Util.dateDiff = function (begin,end,datepart) {
-    var calc
-        ,portion1=Util.datePortion(begin,datepart)
-        ,portion2=Util.datePortion(end,datepart)
-        ,reversed=false
-        ,diff = end.getTime() - begin.getTime();
+// name: dateDiff
+// emulate TSQL datediff 
+// args:
+// -- datepart : compared datepart yyyy,mm,dd,ww.hh,mi,ss
+// -- begin    : js date obj
+// -- end      : js date obj
+// return:
+// return specified difference between 2 dates
+Util.dateDiff = function (datepart,begin,end) {
     datepart = datepart || 'ss';
 
-    calc = portion2[0]-portion1[0]
-        + Math.floor(portion1[1]) 
-        + Math.ceil(portion2[1])
-
-    //if(datepart == "mm"){ calc = diff/(60*1000)
-    //} else if(datepart == "hh"){ calc = diff/(60*60*1000)
-    //} else if(datepart == "dd"){ calc = diff/(24*60*60*1000)
-    //} else if(datepart == "ww"){ 
-    //    // half weeks
-    //    calc = diff/(7*24*60*60*1000)
-    //} else if(datepart == "mm"){ 
-    //    year1=begin.getFullYear(); year2=end.getFullYear();
-    //    month1=begin.getMonth()+1; month2=end.getMonth()+1; 
-
-    //    if(year1==year2){
-    //        calc = month2-month1;
-    //    } else {
-    //        calc = 0;
-    //        //if begin/end date reversed sequence
-    //        if(year2<year1) { 
-    //            year1 = end.getFullYear(); year2 = begin.getFullYear(); 
-    //            month1 = end.getMonth()+1; month2 = begin.getMonth()+1; 
-    //            reversed=true;
-    //        }
-    //        calc = (year2-year1)*12 + 12-month1 + month2;
-    //        calc = calc * (reversed?-1:1);
-    //    }
-    //} else if(datepart == "yyyy"){ calc = end.getFullYear() - begin.getFullYear()
-    //} else { calc = diff/(1000);
-    //}
-
-    return Math.round(calc)
+    var result
+        ,portion1 = Util.datePortion(datepart,begin)
+        ,portion2 = Util.datePortion(datepart,end)
+        ,aggre_portion1 = portion1[0]+portion1[1]
+        ,aggre_portion2 = portion2[0]+portion2[1]
+        ,reversed=( begin.getTime() > end.getTime() );
+    if(reversed) {
+        result = Math.ceil(aggre_portion1) - Math.floor(aggre_portion2);
+        result = result * -1;
+    } else {
+        result = Math.ceil(aggre_portion2) - Math.floor(aggre_portion1); 
+    }
+    return result;
 }
-Util.textDateDiff = function (begin,end,datepart) {
+Util.dateCompare = function (datepart,begin,end) {
+    datepart = datepart || "js"
+    var portion1 = Util.datePortion(datepart,begin)
+        ,portion2 = Util.datePortion(datepart,end)
+
+    return portion1[0]<portion2[0]?1:
+        portion1[0]==portion2[0]?0:-1
+}
+// name: textDateDiff
+// convenient helper to dateDiff
+// args:
+// -- datepart : compared datepart yyyy,mm,dd,ww.hh,mi,ss
+// -- begin    : date text string
+// -- end      : date text string
+// exmp:
+// Util.textDateDiff("dd","12/2/2015","24/2/2015") --> 12
+Util.textDateDiff = function (datepart,begin,end) {
     begin = Util.toDateObj(begin);
     end = Util.toDateObj(end);
-    return Util.dateDiff(begin,end,datepart);
+    return Util.dateDiff(datepart,begin,end);
 }
-Util.dateCompare = function (begin,end,datepart) {
-    //datepart = 
-    //if(datepart)
+Util.textDateCompare = function (datepart,begin,end) {
+    begin = Util.toDateObj(begin);
+    end = Util.toDateObj(end);
+    return Util.dateCompare(datepart,begin,end);
 }
+
 // consider moving to util
 Util.cleanCurrency = function (obj,decimal) {
     var index, length, pre, post, decimal = decimal || 2, result = "";
@@ -534,9 +622,6 @@ Util.cleanCurrency = function (obj,decimal) {
     }
     return result;
 }
-
-
-
 
 Util.maxDate = function (dateObj1,dateObj2) {
     return ( dateObj1.getTime()<dateObj2.getTime() )? dateObj2: dateObj1;
