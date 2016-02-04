@@ -338,16 +338,16 @@ Checker.prototype.render = function ($template,$data) {
 
 /******** Utilities ********/
 var Util = Util || {}
-// name: setRange
+// name: setBounds
 // args:
 // -- target: number in question
 // -- minbase/ maxbase: left and right boundaries to restrict target in
 // return: bounded number
 // exmp:
-// Util.setRange(-4,1,10) --> 1
-// Util.setRange(15,1,10) --> 10
-// Util.setRange(6,1,10) --> 6
-Util.setRange = function (targetNum,minbase,maxbase){
+// Util.setBounds(-4,1,10) --> 1
+// Util.setBounds(15,1,10) --> 10
+// Util.setBounds(6,1,10) --> 6
+Util.setBounds = function (targetNum,minbase,maxbase){
     if(maxbase) targetNum = Math.min(targetNum,maxbase);
     if(minbase) targetNum = Math.max(targetNum,minbase);
     return targetNum;
@@ -518,38 +518,48 @@ Util.toDateObj = function (dateText,format) {
     temp.dd[0] = parseInt(temp.dd[0]);
     return new Date(year,temp.mm[0]-1,temp.dd[0]);
 }
-// name: datePortion 
+// name: distanceFromEpoch 
 // args: 
-// -- datepart: supports yyyy,mm,dd,ww,hh,mi,ss
 // -- dateobj: js dateobj
-// -- indexing: object keys: mmIndex, dayIndex, firstDay (shift motion: -ve:left, +ve:right)
+// -- setting: object keys: firstDay (shift motion: -ve:left, +ve:right)
 // return:
-// selected dateport of js date obj
-Util.datePortion = function (datepart,dateObj,indexing) {
-    datepart = datepart || "ss";
-    indexing = indexing || {};
-    var epoch = new Date(1970,0,1);
-    var dateSeq = Util.circShift([0,1,2,3,4,5,6],indexing.firstDay)
-        ,yyyy = dateObj.getFullYear()
-        ,mm  = (indexing.mmIndex?1:0) + dateObj.getMonth()
-        ,day = (indexing.dayIndex?1:0) + dateSeq[ dateObj.getDay() ] 
-        ,dd  = dateObj.getDate()
-        ,ww  = Math.floor( (dateObj.getTime()-epoch.getTime()-day*24*60*60*1000) / (7*24*60*60*1000) )
-        ,hh  = dateObj.getHours()
-        ,mi  = dateObj.getMinutes()
-        ,ss  = dateObj.getSeconds()
-        ,ms  = dateObj.getMilliseconds()
-        ,result
+// obj with distance in yyyy,mm,ww,dd,hh,mi,ss,ms
+Util.distanceFromEpoch = function (dateObj,setting) {
+    setting = setting || {};
+    setting.firstDay = setting.firstDay || 1;
 
-    if(datepart=="yyyy") result=[yyyy,mm/12];
-    else if(datepart=="mm") result=[mm,dd/(new Date(yyyy,mm,0).getDate())];
-    else if(datepart=="dd") result=[dd,hh/24];
-    else if(datepart=="ww") result=[ww,day/7];
-    else if(datepart=="hh") result=[hh,mi/60];
-    else if(datepart=="mi") result=[mi,ss/60];
-    else if(datepart=="ss") result=[ss,ms/1000];
-    else if(datepart=="js") result=[dateObj.getTime()];
-    return result;
+    var epoch = new Date(1970,0,1)
+    ,yyyy = dateObj.getFullYear()
+    ,mm   = dateObj.getMonth()
+    ,dd   = dateObj.getDate()
+    ,day  = dateObj.getDay()
+    ,time = dateObj.getTime()
+    ,dayRedex = Util.circShift( [0,1,2,3,4,5,6],setting.firstDay ) 
+
+    ,totalDaysInMonth = new Date(yyyy,mm+1,0).getDate()
+    ,offsetDaysInWeek1 = (dayRedex[epoch.getDay()]-dayRedex[setting.firstDay])/7
+    ,elapsedDaysInWeek = dayRedex[day]/7
+    ,elapsedDaysInMonth = dd/totalDaysInMonth
+    ,temp,temp2,temp3,epochRef = {};
+
+    // lower/ upper bounds
+    temp = time      ; epochRef["ms"] = [temp, temp, temp]                       ;
+    temp = temp/1000 ; epochRef["ss"] = [Math.floor(temp), temp, Math.ceil(temp)];
+    temp = temp/60   ; epochRef["mi"] = [Math.floor(temp), temp, Math.ceil(temp)];
+    temp = temp/60   ; epochRef["hh"] = [Math.floor(temp), temp, Math.ceil(temp)];
+    temp = temp/24   ; epochRef["dd"] = [Math.floor(temp), temp, Math.ceil(temp)];
+
+    temp = yyyy - epoch.getFullYear() + (mm + elapsedDaysInMonth) /12;
+    epochRef["yyyy"] = [Math.floor(temp), temp, Math.ceil(temp)];
+
+    temp = ( yyyy - epoch.getFullYear() )*12 + mm + elapsedDaysInMonth
+    epochRef["mm"] = [Math.floor(temp), temp, Math.ceil(temp)];
+
+    temp = (time - epoch.getTime() + 1)/(7*24*60*60*1000) + offsetDaysInWeek1;
+    temp2 = offsetDaysInWeek1<0?1:0;
+    epochRef["ww"] = [Math.floor(temp) + temp2 , temp + temp2, Math.ceil(temp) + temp2 ];
+
+    return epochRef
 }
 // name: dateDiff
 // emulate TSQL datediff 
@@ -560,29 +570,67 @@ Util.datePortion = function (datepart,dateObj,indexing) {
 // return:
 // return specified difference between 2 dates
 Util.dateDiff = function (datepart,begin,end) {
-    datepart = datepart || 'ss';
-
-    var result
-        ,portion1 = Util.datePortion(datepart,begin)
-        ,portion2 = Util.datePortion(datepart,end)
-        ,aggre_portion1 = portion1[0]+portion1[1]
-        ,aggre_portion2 = portion2[0]+portion2[1]
+    datepart = datepart || 'dd';
+    var d1 = Util.distanceFromEpoch(begin) 
+        ,d2 = Util.distanceFromEpoch(end)
         ,reversed=( begin.getTime() > end.getTime() );
     if(reversed) {
-        result = Math.ceil(aggre_portion1) - Math.floor(aggre_portion2);
+        result = d1[datepart][2] - d2[datepart][0];
         result = result * -1;
     } else {
-        result = Math.ceil(aggre_portion2) - Math.floor(aggre_portion1); 
+        result = d2[datepart][2] - d1[datepart][0];
     }
     return result;
 }
+// name: dateCompare
+// args: 
+// -- datepart : datepart
+// -- begin    : js date obj1
+// -- end      : js date obj2
+// return:
+// begin < end, 1
+// begin == end, 0
+// begin > end, -1
 Util.dateCompare = function (datepart,begin,end) {
-    datepart = datepart || "js"
-    var portion1 = Util.datePortion(datepart,begin)
-        ,portion2 = Util.datePortion(datepart,end)
-
-    return portion1[0]<portion2[0]?1:
-        portion1[0]==portion2[0]?0:-1
+    datepart = datepart || "dd"
+    var d1 = Util.distanceFromEpoch(begin)
+        ,d2 = Util.distanceFromEpoch(end)
+        ,diff = d2[datepart][0] - d1[datepart][0]
+    return diff<0?-1: diff>0?1: 0
+}
+// name: setDateBounds
+// args: 
+// -- datepart : datepart
+// -- target   : target
+// -- dtmin    : js date obj min boundary
+// -- dtmax    : js date obj max boundary
+// return:
+// js date obj bounded within, choose boundaries if otherwise
+Util.setDateBounds = function (datepart,target,dtmin,dtmax) {
+    if(Validate.isInit(dtmin)) target = Util.dateCompare(datepart,dtmin,target)<0?dtmin:target;
+    if(Validate.isInit(dtmax)) target = Util.dateCompare(datepart,target,dtmax)<0?dtmax:target;
+    return target
+}
+// name: setDateMax
+// if same choose dateText1
+// args: 
+// -- datepart : datepart
+// -- date1    : js date obj
+// -- date2    : js date obj
+// return:
+// max between js date object, compared based on datepart, if same choose date1
+Util.setDateMax = function (datepart,date1,date2) {
+    return Util.dateCompare(datepart,date1,date2)<0?d1:d2
+}
+// name: setDateMin
+// args: 
+// -- datepart : datepart
+// -- date1    : js date obj
+// -- date2    : js date obj
+// return:
+// min between js date object, compared based on datepart, if same choose date1
+Util.setDateMin = function (datepart,date1,date2) {
+    return Util.dateCompare(datepart,date1,date2)<0?d2:d1
 }
 // name: textDateDiff
 // convenient helper to dateDiff
@@ -592,16 +640,33 @@ Util.dateCompare = function (datepart,begin,end) {
 // -- end      : date text string
 // exmp:
 // Util.textDateDiff("dd","12/2/2015","24/2/2015") --> 12
-Util.textDateDiff = function (datepart,begin,end) {
-    begin = Util.toDateObj(begin);
-    end = Util.toDateObj(end);
+Util.textDateDiff = function (datepart,begin,end,format) {
+    begin = Util.toDateObj(begin,format);
+    end = Util.toDateObj(end,format);
     return Util.dateDiff(datepart,begin,end);
 }
-Util.textDateCompare = function (datepart,begin,end) {
-    begin = Util.toDateObj(begin);
-    end = Util.toDateObj(end);
+Util.textDateCompare = function (datepart,begin,end,format) {
+    begin = Util.toDateObj(begin,format);
+    end = Util.toDateObj(end,format);
     return Util.dateCompare(datepart,begin,end);
 }
+Util.setTextDateBounds = function (datepart,target,dtmin,dtmax,format) {
+    target = Util.toDateObj(target,format);
+    if(Validate.isInit(dtmin)) dtmin = Util.toDateObj(dtmin,format);
+    if(Validate.isInit(dtmax)) dtmax = Util.toDateObj(dtmax,format);
+    return Util.setDateBounds(datepart,target,dtmin,dtmax);
+}
+Util.setTextDateMax = function (datepart,dateText1,dateText2,format) {
+    d1 = Util.toDateObj(dateText1,format);
+    d2 = Util.toDateObj(dateText2,format);
+    return Util.setDateMax(datepart,d1,d2);
+}
+Util.setTextDateMin = function (datepart,dateText1,dateText2,format) {
+    d1 = Util.toDateObj(dateText1,format);
+    d2 = Util.toDateObj(dateText2,format);
+    return Util.setDateMin(datepart,d1,d2);
+}
+
 
 // consider moving to util
 Util.cleanCurrency = function (obj,decimal) {
@@ -621,13 +686,6 @@ Util.cleanCurrency = function (obj,decimal) {
         result =  pre + "." + post; 
     }
     return result;
-}
-
-Util.maxDate = function (dateObj1,dateObj2) {
-    return ( dateObj1.getTime()<dateObj2.getTime() )? dateObj2: dateObj1;
-}
-Util.maxDateText = function (dateText1,dateText2,format) {
-    return Util.maxDate(Util.toDateObj(dateText1,format),Util.toDateObj(dateText2,format));
 }
 
 /******** DatePicker *******/
