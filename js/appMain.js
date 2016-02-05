@@ -107,7 +107,7 @@ var Validate = Validate || {}
 // params: type: [Array,Boolean,Date,Function,Null,Number,Object,RegExp,String,Undefined]
 Validate.isData = function (val,param) {
     param = param || {}
-    if( !Validate.isInit(param.type).passed ) throw "Validate.isData: param.type must be supplied";
+    if( Validate.isEmpty(param.type).passed ) throw "Validate.isData: param.type must be supplied";
     return { passed: Util.getType(val)===param.type }
 }
 // helper functions of isData
@@ -129,7 +129,7 @@ Validate.isRequired  = function (val) { return { passed: Validate.isNumber(val).
 // param: regex, flags
 Validate.isPattern = function (val,params) {
     params = params || {};
-    params.flags = param.flags || "";
+    params.flags = params.flags || "";
 
     if( Validate.isEmpty(val).passed || Validate.isEmpty(params.regex).passed ) return false;
     return { passed: new RegExp(params.regex, params.flags).test(val) };
@@ -475,9 +475,9 @@ Util.padPattern = function (target,pattern,mode,padder) {
 // return:
 // collection of arrays with args.keys as key 
 // exmp:
-// Util.superImpose("12-asdf-2020","dd-cccc-yyyyy",["dd","cc","yyyy"]) -->
+// Util.superImpose("12-rtme-2020","dd-cccc-yyyyy",["dd","cc","yyyy"]) -->
 // dd: ["12"]
-// cc: ["as","df"]
+// cc: ["rt","me"]
 // yyyy: ["2020"]
 Util.superImpose = function (text,pattern,keys) {
     var i,index,temp,result;
