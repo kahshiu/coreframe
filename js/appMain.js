@@ -94,75 +94,73 @@ Templater.compileEach = function (arr){
 }
 
 /******** Validate ********/
+// all validate functions should respect argument signature/ returns as below
+// args:
+// -- args1: value in question, 
+// -- args2: optional params
+// return: 
+// -- passed: boolean result of validation,
+// -- etc: options
 var Validate = Validate || {}
 
-// validate datatype
-Validate.isBoolean = function (obj) {
-    return Object.prototype.toString.call(obj) === "[object Boolean]";
+// validate: isData
+// params: type: [Array,Boolean,Date,Function,Null,Number,Object,RegExp,String,Undefined]
+Validate.isData = function (val,param) {
+    param = param || {}
+    if( !Validate.isInit(param.type).passed ) throw "Validate.isData: param.type must be supplied";
+    return { passed: Util.getType(val)===param.type }
 }
-Validate.isNumber = function (obj) {
-    return Object.prototype.toString.call(obj) === "[object Number]";
-}
-Validate.isString = function (obj) {
-    return Object.prototype.toString.call(obj) === "[object String]";
-}
-Validate.isUndefined = function (obj) {
-    return Object.prototype.toString.call(obj) === "[object Undefined]";
-}
-Validate.isNull = function (obj) {
-    return Object.prototype.toString.call(obj) === "[object Null]";
-}
-Validate.isFunction = function (obj) {
-    return Object.prototype.toString.call(obj) === "[object Function]";
-}
-Validate.isDate = function (obj) {
-    return Object.prototype.toString.call(obj) === "[object Date]";
-}
-Validate.isRegExp = function (obj) {
-    return Object.prototype.toString.call(obj) === "[object RegExp]";
-}
-Validate.isArray = function (obj) {
-    return Object.prototype.toString.call(obj) === "[object Array]";
-}
-Validate.isObject = function (obj) {
-    return Object.prototype.toString.call(obj) === "[object Object]";
-}
-Validate.isNumable = function (obj) {
-    return !isNaN(+obj);
-}
+// helper functions of isData
+Validate.isBoolean   = function (val) { return Validate.isData(val,{type:"Boolean"}) }
+Validate.isNumber    = function (val) { return Validate.isData(val,{type:"Number"}) }
+Validate.isString    = function (val) { return Validate.isData(val,{type:"String"}) }
+Validate.isUndefined = function (val) { return Validate.isData(val,{type:"Undefined"}) }
+Validate.isNull      = function (val) { return Validate.isData(val,{type:"Null"}) }
+Validate.isFunction  = function (val) { return Validate.isData(val,{type:"Function"}) }
+Validate.isDate      = function (val) { return Validate.isData(val,{type:"Date"}) }
+Validate.isRegExp    = function (val) { return Validate.isData(val,{type:"RegExp"}) }
+Validate.isArray     = function (val) { return Validate.isData(val,{type:"Array"}) }
+Validate.isObject    = function (val) { return Validate.isData(val,{type:"Object"}) }
+Validate.isNumable   = function (val) { return { passed: !isNaN(+val) }; }
+Validate.isEmpty     = function (val) { return { passed: val===undefined || val===null || val==="" }; }
+Validate.isRequired  = function (val) { return { passed: Validate.isNumber(val).passed || (Validate.isString(val).passed && val.length>0) }; }
 
-// rudimentary checking
-Validate.isInit = function (val,params) {
-    return val!==undefined && val!==null && val!="";
-}
-Validate.isRequired = function (val,params) {
-    return Validate.isNumber(val) || (Validate.isString(val)&&val.length>0);
-}
-
-// validate pattern
+// validate: isPattern
+// param: regex, flags
 Validate.isPattern = function (val,params) {
     params = params || {};
-    if( !Validate.isInit(val) || !Validate.isInit(params.regex) ) return false;
-    return new RegExp(params.regex, params.flags||"").test(val)
+    params.flags = param.flags || "";
+
+    if( Validate.isEmpty(val).passed || Validate.isEmpty(params.regex).passed ) return false;
+    return { passed: new RegExp(params.regex, params.flags).test(val) };
 }
+// validate: isTextDate
+// param: regex
 Validate.isTextDate = function (val,params) {
     params = params || {}
-    if( !Validate.isInit(val) ) return false;
     params.regex = params.regex|| "\\d{1,2}[/-\\s]\\d{1,2}[/-\\s]\\d{4}";
-    return Validate.isPattern(val,{regex:params.regex})
-}
 
+    if( Validate.isEmpty(val).passed ) return false;
+    return Validate.isPattern(val,params)
+}
+// validate: isDateWithin
+// param: 
+// -- regex,
+// -- format for both lower/upper [dd/mm/yyyy],
+// -- datepart [dd],
+// -- lowerBound,upperBound,
+// -- onLowerBound [true],onUpperBound [true]
 Validate.isDateWithin = function (val,params) {
     params = params || {};
-    params.currentDay = params.currentDay || true;
 
     var compare = {}, result = {}, temp;
     compare.lower = true;
     compare.upper = true;
 
-    //todo: check date code: ambiguity, use regex or char dd/mm/yyyy, use superimpose
-    //if( !Validate.isTextDate(val,{regex:params.regex}) 
-    //        || !Validate.isTextDate(params.dateCompare,{regex:params.regex}) ) return false;
+    if( !Validate.isTextDate(val,{regex:params.regex}).passed 
+            || !Validate.isTextDate(params.upperBound,{regex:params.regex}).passed 
+            || !Validate.isTextDate(params.lowerBound,{regex:params.regex}).passed 
+            ) return false;
 
     if(params.upperBound) {
         temp = Util.textDateCompare(params.datepart,val,params.upperBound)
@@ -174,10 +172,11 @@ Validate.isDateWithin = function (val,params) {
         compare.lower = temp<0?false: temp>0?true: params.onLowerBound?true:false //handling same day
         result.lower = Util.setTextDateMax(params.datepart,val,params.lowerBound,params.format);
     }
-    result.validate = compare.lower && compare.upper
+    result.passed = compare.lower && compare.upper
     return result;
 }
 
+// todo: check this function
 Validate.isCurrency = function (obj) {
     var i,obj = obj.toString()
         ,result = false 
@@ -306,7 +305,7 @@ Checker.prototype.enforce = function (rule,$message,$options) {
     $options = $options || this.options;
     rule.val = rule.val || $options.$val || ""; // note: rule.val: string value/ array
 
-    if( !Validate.isInit(rule.val) ) { 
+    if( Validate.isEmpty(rule.val).passed ) { 
         this.isValid = true;
         this.isStopped = true;
         return this; 
@@ -347,6 +346,15 @@ Checker.prototype.render = function ($template,$data) {
 
 /******** Utilities ********/
 var Util = Util || {}
+
+// [object Array]  // [object Boolean]
+// [object Date]   // [object Function]
+// [object Null]   // [object Number]
+// [object Object] // [object RegExp]
+// [object String] // [object Undefined]
+Util.getType = function (obj) {
+    return Object.prototype.toString.call(obj).slice(8,-1);
+}
 // name: setBounds
 // args:
 // -- target: number in question
@@ -396,7 +404,7 @@ Util.circShift = function (array,motion) {
 // -- Util.padding(10,4), result:0010
 // -- Util.padding(10,4,"post","x"), result:10xx
 Util.padding = function (target,padCount,mode,padder) {
-    var padder = padder || (Validate.isString(target)?"x":"0")
+    var padder = padder || (Validate.isString(target).passed?"x":"0")
         ,target = target.toString()
         , count = padCount
         , mode = mode || "pre"
@@ -426,7 +434,7 @@ Util.padding = function (target,padCount,mode,padder) {
 // Util.padPattern("10000/1/1","000/000") --> "10000/001/1"
 // Util.padPattern("10000/1","000/000/00") --> "10000/001"
 Util.padPattern = function (target,pattern,mode,padder) {
-    if(!Validate.isInit(target) || !Validate.isInit(pattern)) return "";
+    if(Validate.isEmpty(target).passed || Validate.isEmpty(pattern).passed) return target;
     //TODO: reject if pattern not match
 
     var t={},p={},frag={}
@@ -448,7 +456,7 @@ Util.padPattern = function (target,pattern,mode,padder) {
         t.pos2 = t.dpos>-1? (t.pos1+t.dpos):target.length;
 
         frag.raw = target.substring(t.pos1,t.pos2);
-        frag.padded = Util.padding(frag.raw,padLen,mode,Validate.isNumable(frag.raw)?"0":"x");
+        frag.padded = Util.padding(frag.raw,padLen,mode,Validate.isNumable(frag.raw).passed?"0":"x");
 
         target = target.substring(0,t.pos1) + frag.padded + target.substring(t.pos2)
 
@@ -501,7 +509,7 @@ Util.superImpose = function (text,pattern,keys) {
 // return:
 // text representation of date obj
 Util.toDateText = function (dateObj,format) {
-    if(!Validate.isDate(dateObj)) return;
+    if(!Validate.isDate(dateObj).passed) return;
     var dd = Util.padding(dateObj.getDate(),2,undefined,"0")
         ,mm = Util.padding(dateObj.getMonth()+1,2,undefined,"0")
         ,yy = Util.padding(dateObj.getFullYear(),2,undefined,"0")
@@ -616,8 +624,8 @@ Util.dateCompare = function (datepart,begin,end) {
 // return:
 // js date obj bounded within, choose boundaries if otherwise
 Util.setDateBounds = function (datepart,target,dtmin,dtmax) {
-    if(Validate.isInit(dtmin)) target = Util.dateCompare(datepart,dtmin,target)<0?dtmin:target;
-    if(Validate.isInit(dtmax)) target = Util.dateCompare(datepart,target,dtmax)<0?dtmax:target;
+    if(!Validate.isEmpty(dtmin).passed) target = Util.dateCompare(datepart,dtmin,target)<0?dtmin:target;
+    if(!Validate.isEmpty(dtmax).passed) target = Util.dateCompare(datepart,target,dtmax)<0?dtmax:target;
     return target
 }
 // name: setDateMax
@@ -661,8 +669,8 @@ Util.textDateCompare = function (datepart,begin,end,format) {
 }
 Util.setTextDateBounds = function (datepart,target,dtmin,dtmax,format) {
     target = Util.toDateObj(target,format);
-    if(Validate.isInit(dtmin)) dtmin = Util.toDateObj(dtmin,format);
-    if(Validate.isInit(dtmax)) dtmax = Util.toDateObj(dtmax,format);
+    if(!Validate.isEmpty(dtmin).passed) dtmin = Util.toDateObj(dtmin,format);
+    if(!Validate.isEmpty(dtmax).passed) dtmax = Util.toDateObj(dtmax,format);
     return Util.setDateBounds(datepart,target,dtmin,dtmax);
 }
 Util.setTextDateMax = function (datepart,dateText1,dateText2,format) {
@@ -759,7 +767,7 @@ DatePicker.prototype.updateTarget = function () {
     //}
 }
 DatePicker.prototype.readTarget = function (dateText) {
-    if( Validate.isTextDate(dateText) ){
+    if( Validate.isTextDate(dateText).passed ){
         this.dateObj = Util.toDateObj(dateText);
     } else {
         this.dateObj = new Date();
@@ -964,7 +972,7 @@ Navbar.stringifyQString = function (obj) {
 
 Navbar.encodeSubmenuState = function (navbarEls) {
     var full="",key,value;
-    if(Validate.isArray(navbarEls)){
+    if(Validate.isArray(navbarEls).passed){
         for(var i=0;i<navbarEls.length;i++){
             full=full+Navbar.encodeSubmenuState(navbarEls[i]);
         }
