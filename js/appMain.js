@@ -152,21 +152,30 @@ Validate.isTextDate = function (val,params) {
     return Validate.isPattern(val,{regex:params.regex})
 }
 
-Validate.isLater = function (val,params) {
-    params = params || {}
-    params.includeDay = params.includeDay || true
+Validate.isDateWithin = function (val,params) {
+    params = params || {};
+    params.currentDay = params.currentDay || true;
 
-    if( !Validate.isTextDate(val,{regex:params.regex}) || !Validate.isTextDate(params.dateCompare,{regex:params.regex}) ) return false;
+    var compare = {}, result = {}, temp;
+    compare.lower = true;
+    compare.upper = true;
 
-    val = Util.toDateObj(val,params.format)
-    params.dateCompare = Util.toDateObj(params.dateCompare,params.format)
-    //return (includeDay && val>=params.dateCompare) || (!includeDay && val>params.dateCompare)
-}
-Validate.isEarlier = function (obj,bar,includeDay,format) {
-    //includeDay = includeDay || true;
-    //obj = Util.toDateObj(obj,format)
-    //bar = Util.toDateObj(bar,format)
-    //return (includeDay && obj<=bar) || (!includeDay && obj<bar)
+    //todo: check date code: ambiguity, use regex or char dd/mm/yyyy, use superimpose
+    //if( !Validate.isTextDate(val,{regex:params.regex}) 
+    //        || !Validate.isTextDate(params.dateCompare,{regex:params.regex}) ) return false;
+
+    if(params.upperBound) {
+        temp = Util.textDateCompare(params.datepart,val,params.upperBound)
+        compare.upper = temp<0?false: temp>0?true: params.onUpperBound?true:false //handling same day
+        result.upper = Util.setTextDateMin(params.datepart,val,params.upperBound,params.format);
+    }
+    if(params.lowerBound) {
+        temp = Util.textDateCompare(params.datepart,params.lowerBound,val)
+        compare.lower = temp<0?false: temp>0?true: params.onLowerBound?true:false //handling same day
+        result.lower = Util.setTextDateMax(params.datepart,val,params.lowerBound,params.format);
+    }
+    result.validate = compare.lower && compare.upper
+    return result;
 }
 
 Validate.isCurrency = function (obj) {
