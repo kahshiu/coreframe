@@ -145,51 +145,76 @@ Validate.isTextDate = function (val,params) {
 }
 // validate: isDateWithin
 // param: 
-// -- regex,
+// -- regex for date,
 // -- format for both lower/upper [dd/mm/yyyy],
 // -- datepart [dd],
 // -- lowerBound,upperBound,
 // -- onLowerBound [true],onUpperBound [true]
+// -- clean [String,Date]
+// returns:
+// -- { passed, cleaned } 
 Validate.isDateWithin = function (val,params) {
     params = params || {};
+    params.clean = params.clean || "String";
 
-    var compare = {}, result = {}, temp;
+    var compare = {}, result = {}, temp, cleaned = {};
     compare.lower = true;
     compare.upper = true;
 
     if( !Validate.isTextDate(val,{regex:params.regex}).passed 
-            || !Validate.isTextDate(params.upperBound,{regex:params.regex}).passed 
-            || !Validate.isTextDate(params.lowerBound,{regex:params.regex}).passed 
+            || params.upperBound?!Validate.isTextDate(params.upperBound,{regex:params.regex}).passed: true 
+            || params.upperBound?!Validate.isTextDate(params.lowerBound,{regex:params.regex}).passed: true
             ) return false;
 
     if(params.upperBound) {
         temp = Util.textDateCompare(params.datepart,val,params.upperBound)
         compare.upper = temp<0?false: temp>0?true: params.onUpperBound?true:false //handling same day
-        result.upper = Util.setTextDateMin(params.datepart,val,params.upperBound,params.format);
+        val = Util.setTextDateMin(params.datepart,val,params.upperBound,params.format);
     }
     if(params.lowerBound) {
         temp = Util.textDateCompare(params.datepart,params.lowerBound,val)
         compare.lower = temp<0?false: temp>0?true: params.onLowerBound?true:false //handling same day
-        result.lower = Util.setTextDateMax(params.datepart,val,params.lowerBound,params.format);
+        val = Util.setTextDateMax(params.datepart,val,params.lowerBound,params.format);
     }
-    result.passed = compare.lower && compare.upper
+    result.passed = compare.lower && compare.upper;
+    result.cleaned = 
+        params.clean=="Date"?val: 
+        params.clean=="String"?Util.toDateText(val,params.format): "";
     return result;
 }
-
-// todo: check this function
-Validate.isCurrency = function (obj) {
-    var i,obj = obj.toString()
-        ,result = false 
-        ,pattern = [ 
+// validate: isCurrency
+// params:
+// -- regex:Array/regex
+// -- clean:[String,Number]
+// returns:
+// -- { passed, cleaned (String ONLY) }
+Validate.isCurrency = function (val,params) {
+    val = val.toString()
+    params = params || {}
+    params.regex = params.regex || [ 
             /^(?:(?:\d{1,3}(?:\,\d{3})*)|(?:\d+))(?:\.\d*)?$/
             ,/(^0$)|^(?:0\.(?:\d*)|(?:\.\d*))$/
         ]; 
-    for(i=0; i<pattern.length; i++){
-        if(result) break;
-        result = pattern[i].test(obj);
+    params.clean = params.clean || "String";
+
+    var i,result = {},temp;
+    result.passed = false;
+
+    if(Validate.isRegExp(params.regex).passed) params.regex = [params.regex];
+
+    for(i=0; i<params.regex.length; i++){
+        if(result.passed) break;
+        result.passed = params.regex[i].test(val);
+    }
+    if(params.clean=="String" || params.clean=="Number") {
+        temp = Util.formatCurrency(val,2);
+        result.clean = params.clean=="String"?temp.string:temp.num;
+    } else {
+        result.clean = "";
     }
     return result;
 }
+
 
 Validate.element = function (el) {
     var flag;
@@ -480,6 +505,7 @@ Util.padPattern = function (target,pattern,mode,padder) {
 // cc: ["rt","me"]
 // yyyy: ["2020"]
 Util.superImpose = function (text,pattern,keys) {
+    text = text.toString();
     var i,index,temp,result;
     temp = {};
     result = {};
@@ -501,6 +527,36 @@ Util.superImpose = function (text,pattern,keys) {
         }
     }
     return result;
+}
+
+// name: formatCurrency
+// number formatted 
+// args:
+// -- val: String,Number
+// -- decimal: decimal at the back 
+// returns:
+// formatted decimal string
+Util.formatCurrency = function (val,decimal) {
+    val = val.toString();
+    val = parseFloat( val.replace(/[^0-9\.\-]/g,"") );
+    if(isNaN(val)) return "";
+
+    var length, pre, post, decimal = decimal || 2, rNum, rString;
+
+    val = val.toFixed(decimal+4); // approximate precision to 4 decimals
+    val = Math.round( val*Math.pow(10,decimal) ); // rounding of decimal digits 
+    rNum = val/Math.pow(10,decimal);
+
+    val = val.toString(); // prepare for string formatting
+    pre = Util.padding(val.slice(0,-1*decimal),1,"pre","0");
+    post = Util.padding(val.slice(-1*decimal),decimal,"post","0");
+    length = pre.length;
+    while(length>3) { 
+        length = length-3; 
+        pre = pre.slice(0,length) + "," + pre.slice(length); 
+    };
+    rString =  pre + "." + post; 
+    return { string:rString, num:rNum };
 }
 // name: toDateText
 // args:
@@ -684,26 +740,6 @@ Util.setTextDateMin = function (datepart,dateText1,dateText2,format) {
     return Util.setDateMin(datepart,d1,d2);
 }
 
-
-// consider moving to util
-Util.cleanCurrency = function (obj,decimal) {
-    var index, length, pre, post, decimal = decimal || 2, result = "";
-    if(Validate.isCurrency(obj)){
-        obj = parseFloat( obj.toString().replace(/\,/g,"") );              //normalise to int
-        obj = Math.round( obj.toFixed(decimal+4)*Math.pow(10,decimal) ); //truncate with percision of additional 4 decimal points
-        obj = obj.toString();
-
-        if(obj == "0") { pre = "0"; post="00" }
-        else {
-            pre = obj.slice(0,obj.length-2);
-            post = obj.slice(-2);
-            length = pre.length;
-            while(length>3) { length = length-3; pre = pre.slice(0,length) + "," + pre.slice(length); };
-        }
-        result =  pre + "." + post; 
-    }
-    return result;
-}
 
 /******** DatePicker *******/
 function DatePicker (templates) {
