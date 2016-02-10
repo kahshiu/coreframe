@@ -100,6 +100,7 @@ Templater.compileEach = function (arr){
 // -- args2: optional params
 // return: 
 // -- passed: boolean result of validation,
+// -- cleaned (optional): cleaned input after validation,
 // -- etc: options
 var Validate = Validate || {}
 
@@ -108,7 +109,8 @@ var Validate = Validate || {}
 Validate.isData = function (val,param) {
     param = param || {}
     if( Validate.isEmpty(param.type).passed ) throw "Validate.isData: param.type must be supplied";
-    return { passed: Util.getType(val)===param.type }
+    var flag = Util.getType(val)===param.type;
+    return { passed: flag, cleaned:flag?val:"" }
 }
 // helper functions of isData
 Validate.isBoolean   = function (val) { return Validate.isData(val,{type:"Boolean"}) }
@@ -131,8 +133,9 @@ Validate.isPattern = function (val,params) {
     params = params || {};
     params.flags = params.flags || "";
 
-    if( Validate.isEmpty(val).passed || Validate.isEmpty(params.regex).passed ) return false;
-    return { passed: new RegExp(params.regex, params.flags).test(val) };
+    if( Validate.isEmpty(val).passed || Validate.isEmpty(params.regex).passed ) return { passed:false, cleaned:"" };
+    var flag = new RegExp(params.regex, params.flags).test(val);
+    return { passed:flag, cleaned:flag?val:"" }
 }
 // validate: isTextDate
 // param: regex
@@ -140,7 +143,7 @@ Validate.isTextDate = function (val,params) {
     params = params || {}
     params.regex = params.regex|| "\\d{1,2}[/-\\s]\\d{1,2}[/-\\s]\\d{4}";
 
-    if( Validate.isEmpty(val).passed ) return false;
+    if( Validate.isEmpty(val).passed ) return { passed:false, cleaned:"" };
     return Validate.isPattern(val,params)
 }
 // validate: isDateWithin
@@ -156,6 +159,8 @@ Validate.isTextDate = function (val,params) {
 Validate.isDateWithin = function (val,params) {
     params = params || {};
     params.clean = params.clean || "String";
+    params.onUpperBound = Validate.isEmpty(params.onUpperBound).passed?true: params.onUpperBound;
+    params.onLowerBound = Validate.isEmpty(params.onLowerBound).passed?true: params.onLowerBound;
 
     var compare = {}, result = {}, temp, cleaned = {};
     compare.lower = true;
@@ -164,17 +169,23 @@ Validate.isDateWithin = function (val,params) {
     if( !Validate.isTextDate(val,{regex:params.regex}).passed 
             || params.upperBound?!Validate.isTextDate(params.upperBound,{regex:params.regex}).passed: true 
             || params.upperBound?!Validate.isTextDate(params.lowerBound,{regex:params.regex}).passed: true
-            ) return false;
+            ) return { passed:false, cleaned:"" };
+
+    val = Util.toDateObj(val);
+    params.upperBound = Util.toDateObj(params.upperBound);
+    params.lowerBound = Util.toDateObj(params.lowerBound);
+    if(!params.onUpperBound) params.upperBound.setDate(params.upperBound.getDate()-1);
+    if(!params.onLowerBound) params.lowerBound.setDate(params.lowerBound.getDate()+1);
 
     if(params.upperBound) {
-        temp = Util.textDateCompare(params.datepart,val,params.upperBound)
-        compare.upper = temp<0?false: temp>0?true: params.onUpperBound?true:false //handling same day
-        val = Util.setTextDateMin(params.datepart,val,params.upperBound,params.format);
+        temp = Util.dateCompare(params.datepart,val,params.upperBound)
+        compare.upper = temp>=0;
+        val = Util.setDateMin(params.datepart,val,params.upperBound,params.format);
     }
     if(params.lowerBound) {
-        temp = Util.textDateCompare(params.datepart,params.lowerBound,val)
-        compare.lower = temp<0?false: temp>0?true: params.onLowerBound?true:false //handling same day
-        val = Util.setTextDateMax(params.datepart,val,params.lowerBound,params.format);
+        temp = Util.dateCompare(params.datepart,params.lowerBound,val)
+        compare.lower = temp>=0;
+        val = Util.setDateMax(params.datepart,val,params.lowerBound,params.format);
     }
     result.passed = compare.lower && compare.upper;
     result.cleaned = 
@@ -208,68 +219,12 @@ Validate.isCurrency = function (val,params) {
     }
     if(params.clean=="String" || params.clean=="Number") {
         temp = Util.formatCurrency(val,2);
-        result.clean = params.clean=="String"?temp.string:temp.num;
+        result.cleaned = params.clean=="String"?temp.string:temp.num;
     } else {
-        result.clean = "";
+        result.cleaned = "";
     }
     return result;
 }
-
-
-Validate.element = function (el) {
-    var flag;
-
-    if(el.nodeName=="FORM") {
-        // TODO: loop through validation for all form elements 
-        flag = true;
-
-    } else {
-        // default for input: text,hidden,button,reset
-        var i,script = el.getAttribute("validate").trim() || "";
-        var choices,
-            choicesType = 
-            ( el.nodeName=="SELECT" || (el.nodeName=="INPUT" && (el.type=="checkbox"||el.type=="radio")) )? "multi":
-            ( el.nodeName=="INPUT" && (el.type=="text"||el.type=="hidden"||el.type=="file") )? "single":
-            "none";
-
-        var selectedEl = el,
-            selectedVal = el.value || el.innerHTML, 
-            selectedValType = 
-            ( el.nodeName=="SELECT" && (el.hasAttribute("multiple")||el.hasAttribute("MULTIPLE")) ) || ( el.nodeName=="INPUT" && el.type=="checkbox" )? "multi": 
-            ( el.nodeName=="SELECT" && !(el.hasAttribute("multiple")||el.hasAttribute("MULTIPLE")) ) || ( el.nodeName=="INPUT" && el.type=="radio" )? "single":
-            "none";
-
-        var term = 
-            el.nodeName=="SELECT"? "selected": 
-            el.nodeName=="INPUT" && (el.type=="checkbox"||el.type=="radio")? "checked": 
-            "none";
-
-        if(choicesType == "multi") { 
-            selectedEl = []; 
-            selectedVal = [];
-            choices = 
-                term=="selected"? el.children: 
-                term=="checked"? document.getElementsByName(el.name): 
-                undefined;
-
-            for(i=0; i<choices.length; i++){
-                if( choices[i].selected || choices[i].checked ) {
-                    selectedEl.push( choices[i] )
-                    selectedVal.push( choices[i].value );
-
-                    if( selectedValType == "single" ){
-                        selectedEl = selectedEl[0];
-                        selectedVal = selectedVal[0];
-                        break;
-                    }
-                }
-            } 
-        }
-        flag = script==""? true:( new Function ("$options",script) )( {$el:el,$selected:selectedEl,$val:selectedVal,$els:choices} );
-    }
-    return flag;
-}        
-
 // generate functions to validate elements
 //generate obj with array of elements to hold result
 // validation object
@@ -292,83 +247,220 @@ Validate.element = function (el) {
 //password complexity
 //unique constrain/ across fields
 
-/******** Checker **********/
-function Checker (config){
+/******** Police **********/
+function Police (config){
     var config = config || {};
 
-    this.options;
-    this.isValid = true;
-    this.isStopped = false;
-
-    this.messages = {};
-    this.messages.isRequired = "{{$data.$el.id}} is required.";
-
-    this.template = config.template||'<span message id="{{$data.messageId}}" class="{{$data.messageClassName}}"></span>';
+    this.targetClassName = config.targetClassName||"";
+    this.messageClassName = config.messageClassName||"alert danger";
     this.messageIdPrefix = config.messageIdPrefix||"validate$";
-    this.messageClassName = config.messageClassName||"";
-    this.message = "";
+    this.template = config.template||'<div id="{{$data.messageId}}" class="{{$data.messageClassName}}"></div>';
 
-    return this;
-}
-// checker: reset variables
-Checker.prototype.using = function ($options) {
-    this.options = $options || {};
+    this.overallClassName = config.overallClassName||"alert danger";
+    this.overallIdPrefix = config.overallIdPrefix||"overall$";
+    this.overallTemplate = '<div id="{{$data.overallId}}" class="{{$data.overallClassName}}"></div>';
+
+    this.message = "";
+    this.messageBox = [];
+
+    this.options;
+    this.cleaned;
     this.isValid = true;
     this.isStopped = false;
-    this.message = "";
     return this;
 }
-// checker: enforce rules 
-Checker.prototype.enforce = function (rule,$message,$options) {
+Police.prototype.templateFor = function (rule) {
+    var messages = {};
+    messages.isRequired = "{{$data.$options.$el.name}} is required.";
+    messages.isPattern = "{{$data.$params.regexExample? 'Pattern required is '+$data.$params.regexExample:'Incorrect pattern'}}";
+    messages.isTextDate = "Incorrect date supplied";
+    messages.isDateWithin = "Date must be within {{$data.$params.lowerBound? ('min:'+Util.toDateText($data.$params.lowerBound)):''}} {{$data.$params.upperBound? ('max:'+Util.toDateText($data.$params.upperBound)):''}}";
+    messages.isCurrency = "Incorrect currency supplied";
+    messages.overall ="Invalid form fields. Please check."
+
+    return messages[rule] || "";
+}
+// Police: reset variables
+Police.prototype.using = function ($options,config) {
+    config = config || {};
+    this.message = "";
+    if(config.resetMessages) this.resetMessageBox();
+
+    this.options = $options || {};
+    this.cleaned = undefined;
+    this.isValid = true;
+    this.isStopped = false;
+    return this;
+}
+Police.prototype.appendMessage = function (message,delim) {
+    message = message || "";
+    delim = delim || "<br>";
+    this.message = this.message + (this.message.length>0?delim:"") + message; 
+}
+Police.prototype.resetMessageBox = function () {
+    this.messageBox = [];
+}
+
+// Police: enforce rules
+// args:
+// rule {name,value,params}
+// $message String, message to display
+// $options {$el-targeted element, $selected-selected element, $val-value of selected element, $els-choices of target,if any} 
+Police.prototype.enforce = function (rule,$message,$options) {
     if( this.isStopped ) return this;
 
     rule = rule || {};
+    rule.cleanedVal = rule.hasOwnProperty("cleanedVal")?rule.cleanedVal: true;
+    rule.stopPropagation = rule.hasOwnProperty("stopPropagation")?rule.stopPropagation: true;
     rule.params = rule.params || {};
 
-    if( !rule.name ) throw "Checker.enforce: rule name is required";
-    $message = $message || this.messages[rule.name];
-    $options = $options || this.options;
-    rule.val = rule.val || $options.$val || ""; // note: rule.val: string value/ array
+    var temp;
 
-    if( Validate.isEmpty(rule.val).passed ) { 
-        this.isValid = true;
+    if( !rule.name ) throw "Police.enforce: rule name is required";
+    $message = $message || this.templateFor(rule.name);
+    $options = $options || this.options;
+    rule.val = rule.val || $options.$val || ""; // note: rule.val returns string value/ array/ TODO:callback fn?
+    if( rule.cleanedVal && this.cleaned ) { rule.val = this.cleaned; } // enforce cleaned value to display
+
+    // premature exit if not filled in: except isRequired
+    if( Validate.isEmpty(rule.val).passed && rule.name!="isRequired") { 
+        this.isValid = this.isValid && true;
         this.isStopped = true;
         return this; 
     }
 
-    this.isValid = this.isValid && (Validate.hasOwnProperty(rule)? Validate[rule](rule.val,rule.params):true); 
+    temp = Validate[rule.name](rule.val,rule.params);
+    this.isValid = this.isValid && temp.passed; 
+    this.cleaned = temp.hasOwnProperty("cleaned")?temp.cleaned: this.cleaned;
+
     if (!this.isValid) {
-        this.message = $message;
-        this.isStopped = true
+        if(this.cleaned) $options.$el.value = this.cleaned;
+        temp = Templater.compileTemplate($message,{ $options:$options, $params:rule.params });
+        this.appendMessage(temp);
+        this.messageBox.push(temp);
+        this.isStopped = rule.stopPropagation;
     }
     return this;
 }
-// checker: render element/ determine content
-Checker.prototype.render = function ($template,$data) {
+// Police: implement validation on all form elements
+// args:
+// el: HTML element
+Police.prototype.form = function (el) {
+    if(el.nodeName!="FORM") return false; 
+
+    var i,flag=true
+        ,isSubmit
+        ,formEls = $(el).find("input,select,textarea,button")
+        ,overallId
+        ,overallEl
+    this.resetMessageBox();
+
+    // loop validation for tags BUT submit,reset button: input(text,hidden,password,radio,checkbox,button),select,textarea,button 
+    for(i=0;i<formEls.length;i++) {
+        isSubmit=formEls[i].nodeName=="input" && (formEls[i].type=="submit" || formEls[i].type=="SUBMIT");
+        // event: prevent default event
+        if(isSubmit) { event.preventDefault(); }
+        this.element(formEls[i]);
+    }
+
+    // render overall message
+    if( !el.hasAttribute("overallId") ) {
+        overallId = _.uniqueId(this.overallIdPrefix);
+        el.setAttribute("overallId",overallId);
+        $(el).prepend(
+            Templater.compileTemplate( this.overallTemplate,{overallId:overallId,overallClassName:this.overallClassName} )
+        );
+    }
+    overallEl = document.getElementById(el.getAttribute("overallId"));
+    if(this.isValid) {
+        overallEl.style.display = "none";
+        overallEl.innerHTML = "";
+    } else {
+        overallEl.style.display = "block";
+        overallEl.innerHTML = this.templateFor("overall");
+    }
+}
+// Police: implement validation form elements
+// args:
+// el: HTML element
+Police.prototype.element = function (el) {
+    var flag = true;
+
+    var i,script = el.getAttribute("validate");
+    if( Validate.isEmpty(script).passed ) return true; 
+    script = script.trim();
+
+    var choices,
+        choicesType = 
+        ( el.nodeName=="SELECT" || (el.nodeName=="INPUT" && (el.type=="checkbox"||el.type=="radio")) )? "multi":
+        ( el.nodeName=="TEXTAREA" || (el.nodeName=="INPUT" && (el.type=="text"||el.type=="hidden"||el.type=="file")) )? "single":
+        "none";
+
+    // default for input: text,textarea,hidden,button,reset
+    var selectedEl = el,
+        selectedVal = el.value || el.innerHTML, 
+        selectedValType = 
+        ( el.nodeName=="SELECT" && (el.hasAttribute("multiple")||el.hasAttribute("MULTIPLE")) ) || ( el.nodeName=="INPUT" && el.type=="checkbox" )? "multi": 
+        ( el.nodeName=="SELECT" && !(el.hasAttribute("multiple")||el.hasAttribute("MULTIPLE")) ) || ( el.nodeName=="INPUT" && el.type=="radio" )? "single":
+        "none";
+
+    var term = 
+        el.nodeName=="SELECT"? "selected": 
+        el.nodeName=="INPUT" && (el.type=="checkbox"||el.type=="radio")? "checked": 
+        "none";
+
+    if(choicesType == "multi") { 
+        selectedEl = []; 
+        selectedVal = [];
+        choices = 
+            term=="selected"? $(el).find("option"): 
+            term=="checked"? document.getElementsByName(el.name): 
+            undefined;
+
+        for(i=0; i<choices.length; i++){
+            if( choices[i].selected || choices[i].checked ) {
+                selectedEl.push( choices[i] )
+                selectedVal.push( choices[i].value );
+
+                if( selectedValType == "single" ){
+                    selectedEl = selectedEl[0];
+                    selectedVal = selectedVal[0];
+                    break;
+                }
+            }
+        } 
+    }
+    ( new Function ("$options",script) )( {$el:el,$selected:selectedEl,$val:selectedVal,$els:choices} );
+    flag = this.isValid;
+    return flag;
+}        
+// Police: render element/ determine content
+// args:
+// $template: String, template for message element
+// $data: obj, data to fuse into template
+Police.prototype.render = function ($template,$data) {
     if( !(this.options && this.options.$el) ) return this;
 
     if( !this.options.$el.hasAttribute("validateId") ){
-            $data = $data || {};
-            $data.messageClassName = $data.messageClassName || this.messageClassName || "";
-            $data.messageId = $data.messageId || _uniqueId($data.messageIdPrefix||this.messageIdPrefix);
-            this.options.$el.setAttribute("validateId",$data.messageId);
-            $(this.options.$el.parentNode).append(
-                Templater.compileTemplate( $template||this.template,$data ) 
-            );
-        }
-        // write message
-        var errorEl = document.getElementById(this.options.$el.getAttribute("validateId"))
-        if(this.flag){
-            errorEl.style.display = "none";
-            errorEl.innerHTML = "";
-        } else {
-            errorEl.style.display = "initial";
-            errorEl.innerHTML = this.message;
-        }
+        $data = $data || {};
+        $data.messageClassName = $data.messageClassName || this.messageClassName || "";
+        $data.messageId = $data.messageId || _.uniqueId($data.messageIdPrefix||this.messageIdPrefix);
+        this.options.$el.setAttribute("validateId",$data.messageId);
+        $(this.options.$el.parentNode).append(
+            Templater.compileTemplate( $template||this.template,$data ) 
+        );
+    }
+    // write message
+    var errorEl = document.getElementById(this.options.$el.getAttribute("validateId"));
+    if(this.isValid){
+        errorEl.style.display = "none";
+        errorEl.innerHTML = "";
+    } else {
+        errorEl.style.display = "block";
+        errorEl.innerHTML = this.message;
+    }
     return this; 
 }
-
-
 /******** Utilities ********/
 var Util = Util || {}
 
@@ -693,7 +785,7 @@ Util.setDateBounds = function (datepart,target,dtmin,dtmax) {
 // return:
 // max between js date object, compared based on datepart, if same choose date1
 Util.setDateMax = function (datepart,date1,date2) {
-    return Util.dateCompare(datepart,date1,date2)<0?d1:d2
+    return Util.dateCompare(datepart,date1,date2)>0?date2:date1
 }
 // name: setDateMin
 // args: 
@@ -703,7 +795,7 @@ Util.setDateMax = function (datepart,date1,date2) {
 // return:
 // min between js date object, compared based on datepart, if same choose date1
 Util.setDateMin = function (datepart,date1,date2) {
-    return Util.dateCompare(datepart,date1,date2)<0?d2:d1
+    return Util.dateCompare(datepart,date1,date2)<0?date2:date1
 }
 // name: textDateDiff
 // convenient helper to dateDiff
@@ -732,12 +824,12 @@ Util.setTextDateBounds = function (datepart,target,dtmin,dtmax,format) {
 Util.setTextDateMax = function (datepart,dateText1,dateText2,format) {
     d1 = Util.toDateObj(dateText1,format);
     d2 = Util.toDateObj(dateText2,format);
-    return Util.setDateMax(datepart,d1,d2);
+    return Util.toDateText( Util.setDateMax(datepart,d1,d2) );
 }
 Util.setTextDateMin = function (datepart,dateText1,dateText2,format) {
     d1 = Util.toDateObj(dateText1,format);
     d2 = Util.toDateObj(dateText2,format);
-    return Util.setDateMin(datepart,d1,d2);
+    return Util.toDateText( Util.setDateMin(datepart,d1,d2) );
 }
 
 
@@ -796,11 +888,10 @@ DatePicker.prototype.rebind = function (targetEl,hostEl) {
 }
 DatePicker.prototype.updateTarget = function () {
     this.bindTo.value = Util.toDateText(this.dateObj);
-    // todo: develop/ test
-    //Validate.element(this.bindTo);
-    //if( this.bindTo.value != Util.toDateText(this.dateObj) ){ 
-    //    this.readTarget(this.bindTo.value)
-    //}
+
+    // validation
+    var temp = static$Police.element( this.bindTo );
+    this.bindTo.value = static$Police.cleaned;
 }
 DatePicker.prototype.readTarget = function (dateText) {
     if( Validate.isTextDate(dateText).passed ){
