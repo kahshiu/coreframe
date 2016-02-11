@@ -101,7 +101,6 @@ Templater.compileEach = function (arr){
 // return: 
 // -- passed: boolean result of validation,
 // -- cleaned (optional): cleaned input after validation,
-// -- etc: options
 var Validate = Validate || {}
 
 // validate: isData
@@ -125,7 +124,17 @@ Validate.isArray     = function (val) { return Validate.isData(val,{type:"Array"
 Validate.isObject    = function (val) { return Validate.isData(val,{type:"Object"}) }
 Validate.isNumable   = function (val) { return { passed: !isNaN(+val) }; }
 Validate.isEmpty     = function (val) { return { passed: val===undefined || val===null || val==="" }; }
-Validate.isRequired  = function (val) { return { passed: Validate.isNumber(val).passed || (Validate.isString(val).passed && val.length>0) }; }
+Validate.isRequired  = function (val) { 
+    var temp = false;
+    if(Validate.isArray(val).passed) { 
+        temp = (val.length > 0)
+    } else if (Validate.isNumber(val).passed) { 
+        temp = true;
+    } else if (Validate.isString(val).passed) { 
+        temp = val.length>0;
+    }
+    return { passed: temp }; 
+}
 
 // validate: isPattern
 // param: regex, flags
@@ -137,6 +146,13 @@ Validate.isPattern = function (val,params) {
     var flag = new RegExp(params.regex, params.flags).test(val);
     return { passed:flag, cleaned:flag?val:"" }
 }
+
+// TODO: implement API
+Validate.isEmail = function (val,params) {}
+Validate.isPhone = function (val,params) {}
+// password complexity
+Validate.isComplexity = function (val,params) {}
+
 // validate: isTextDate
 // param: regex
 Validate.isTextDate = function (val,params) {
@@ -225,27 +241,52 @@ Validate.isCurrency = function (val,params) {
     }
     return result;
 }
-// generate functions to validate elements
-//generate obj with array of elements to hold result
-// validation object
+// validate: isNumWithin
+// params:
+// -- onMinNum
+// -- onMaxNum
+// -- minNum
+// -- maxNum
+// returns: passed, cleaned (Number ONLY)
+Validate.isNumWithin = function (val,param) {
+    var result = {passed:false, cleaned:'0'}
+        ,temp = Validate.isCurrency(val,{clean:"Number"});
+    if( !temp.passed ) return result;
 
-//Validator.
-//required
-//min
-//max
-//minlength
-//max
-//range no
-//range date
-//pattern
-//email
-//phone
-//number (without symbols?)
-//digits only
-//step
-//dependency on other fields
-//password complexity
-//unique constrain/ across fields
+    param.onMinNum = Validate.isEmpty(param.onMinNum).passed?true: param.onMinNum;
+    param.onMaxNum = Validate.isEmpty(param.onMaxNum).passed?true: param.onMaxNum;
+    param.minNum = param.onMinNum?param.minNum: (param.minNum+1);
+    param.maxNum = param.onMaxNum?param.maxNum: (param.maxNum-1);
+
+    result.passed = (param.minNum? (val>=param.minNum):true);
+    result.passed = (param.maxNum? (val<=param.maxNum):true) && result.passed;
+    result.cleaned = Util.setBounds(val,param.minNum,param.maxNum);
+    return result;
+}
+// TODO:added support for array
+Validate.isOption = function (val,param) {
+    var result = {passed:false, cleaned:['4','1','2']};
+    return result;
+}
+
+// validate: isStringWithin
+// params:
+// -- minLength
+// -- maxLength
+// returns: passed, cleaned (String ONLY)
+Validate.isStringWithin = function (val,param) {
+    var result = {passed:false,cleaned:val}; 
+    param.minLength = param.minLength?param.minLength:0;
+    param.maxLength = param.maxLength?param.maxLength:255;
+    result.passed = val.length > param.minLength;
+    result.passed = (val.length < param.maxLength) && result.passed;
+    result.cleaned = val.substring(0,param.maxLength);
+    return result;
+}
+
+// generate functions to validate elements
+// generate obj with array of elements to hold result
+// validation object
 
 /******** Police **********/
 function Police (config){
@@ -254,11 +295,11 @@ function Police (config){
     this.targetClassName = config.targetClassName||"";
     this.messageClassName = config.messageClassName||"alert danger";
     this.messageIdPrefix = config.messageIdPrefix||"validate$";
-    this.template = config.template||'<div id="{{$data.messageId}}" class="{{$data.messageClassName}}"></div>';
+    this.template = config.template||'<div><div id="{{$data.messageId}}" class="{{$data.messageClassName}}"></div></div>';
 
     this.overallClassName = config.overallClassName||"alert danger";
     this.overallIdPrefix = config.overallIdPrefix||"overall$";
-    this.overallTemplate = '<div id="{{$data.overallId}}" class="{{$data.overallClassName}}"></div>';
+    this.overallTemplate = '<div><div id="{{$data.overallId}}" class="{{$data.overallClassName}}"></div></div>';
 
     this.message = "";
     this.messageBox = [];
@@ -276,7 +317,7 @@ Police.prototype.templateFor = function (rule) {
     messages.isTextDate = "Incorrect date supplied";
     messages.isDateWithin = "Date must be within {{$data.$params.lowerBound? ('min:'+Util.toDateText($data.$params.lowerBound)):''}} {{$data.$params.upperBound? ('max:'+Util.toDateText($data.$params.upperBound)):''}}";
     messages.isCurrency = "Incorrect currency supplied";
-    messages.overall ="Invalid form fields. Please check."
+    messages.overall ="Invalid {{$data.$options.$el.name}} fields. Please check."
 
     return messages[rule] || "";
 }
@@ -334,12 +375,43 @@ Police.prototype.enforce = function (rule,$message,$options) {
     this.cleaned = temp.hasOwnProperty("cleaned")?temp.cleaned: this.cleaned;
 
     if (!this.isValid) {
-        if(this.cleaned) $options.$el.value = this.cleaned;
+        this.writeCleaned($options);
         temp = Templater.compileTemplate($message,{ $options:$options, $params:rule.params });
         this.appendMessage(temp);
         this.messageBox.push(temp);
         this.isStopped = rule.stopPropagation;
     }
+    return this;
+}
+// Police (helper): writeClean
+// args:
+// options (of element)
+// params (unused as yet)
+// TODO:input file,image
+Police.prototype.writeCleaned = function (options,params) {
+    var i=0,term;
+    if(!this.cleaned) return;
+
+    if( options.$els ) {
+        // form control: select OR (input checkbox/ radio)
+        if(options.$el.nodeName=="SELECT") { term = "selected";
+        } else { term = "checked";
+        }
+        for( i=0;i<options.$els.length;i++ ) { 
+            if( this.cleaned.indexOf(options.$els[i].value)>-1 ) {
+                options.$els[i].setAttribute(term,"");
+            }
+        }
+    } else {
+        options.$el.value = this.cleaned;
+    }
+}
+// TODO: implement API
+//disable element
+Police.prototype.disable = function (els,params) {
+    // els can be array
+    // el.disabled = el;
+
     return this;
 }
 // Police: implement validation on all form elements
@@ -390,47 +462,7 @@ Police.prototype.element = function (el) {
     if( Validate.isEmpty(script).passed ) return true; 
     script = script.trim();
 
-    var choices,
-        choicesType = 
-        ( el.nodeName=="SELECT" || (el.nodeName=="INPUT" && (el.type=="checkbox"||el.type=="radio")) )? "multi":
-        ( el.nodeName=="TEXTAREA" || (el.nodeName=="INPUT" && (el.type=="text"||el.type=="hidden"||el.type=="file")) )? "single":
-        "none";
-
-    // default for input: text,textarea,hidden,button,reset
-    var selectedEl = el,
-        selectedVal = el.value || el.innerHTML, 
-        selectedValType = 
-        ( el.nodeName=="SELECT" && (el.hasAttribute("multiple")||el.hasAttribute("MULTIPLE")) ) || ( el.nodeName=="INPUT" && el.type=="checkbox" )? "multi": 
-        ( el.nodeName=="SELECT" && !(el.hasAttribute("multiple")||el.hasAttribute("MULTIPLE")) ) || ( el.nodeName=="INPUT" && el.type=="radio" )? "single":
-        "none";
-
-    var term = 
-        el.nodeName=="SELECT"? "selected": 
-        el.nodeName=="INPUT" && (el.type=="checkbox"||el.type=="radio")? "checked": 
-        "none";
-
-    if(choicesType == "multi") { 
-        selectedEl = []; 
-        selectedVal = [];
-        choices = 
-            term=="selected"? $(el).find("option"): 
-            term=="checked"? document.getElementsByName(el.name): 
-            undefined;
-
-        for(i=0; i<choices.length; i++){
-            if( choices[i].selected || choices[i].checked ) {
-                selectedEl.push( choices[i] )
-                selectedVal.push( choices[i].value );
-
-                if( selectedValType == "single" ){
-                    selectedEl = selectedEl[0];
-                    selectedVal = selectedVal[0];
-                    break;
-                }
-            }
-        } 
-    }
-    ( new Function ("$options",script) )( {$el:el,$selected:selectedEl,$val:selectedVal,$els:choices} );
+    ( new Function ("$options",script) )( Util.getOptions(el) );
     flag = this.isValid;
     return flag;
 }        
@@ -461,6 +493,10 @@ Police.prototype.render = function ($template,$data) {
     }
     return this; 
 }
+// TODO: think about
+//dependency on other fields
+//unique constrain/ across fields
+
 /******** Utilities ********/
 var Util = Util || {}
 
@@ -830,6 +866,58 @@ Util.setTextDateMin = function (datepart,dateText1,dateText2,format) {
     d1 = Util.toDateObj(dateText1,format);
     d2 = Util.toDateObj(dateText2,format);
     return Util.toDateText( Util.setDateMin(datepart,d1,d2) );
+}
+// name: getOptions
+// generate $options of form controls for further processing
+Util.getOptions = function (el) {
+    var choices,
+        choicesType = 
+        ( el.nodeName=="SELECT" || (el.nodeName=="INPUT" && (el.type=="checkbox"||el.type=="radio")) )? "multi":
+        ( el.nodeName=="TEXTAREA" || (el.nodeName=="INPUT" && (el.type=="text"||el.type=="hidden"||el.type=="file")) )? "single":
+        "none";
+
+    // default for input: text,textarea,hidden,button,reset
+    var selectedEl = el,
+        selectedVal = el.value || el.innerHTML, 
+        selectedValType = 
+        ( el.nodeName=="SELECT" && (el.hasAttribute("multiple")||el.hasAttribute("MULTIPLE")) ) || ( el.nodeName=="INPUT" && el.type=="checkbox" )? "multi": 
+        ( el.nodeName=="SELECT" && !(el.hasAttribute("multiple")||el.hasAttribute("MULTIPLE")) ) || ( el.nodeName=="INPUT" && el.type=="radio" )? "single":
+        "none";
+
+    var term = 
+        el.nodeName=="SELECT"? "selected": 
+        el.nodeName=="INPUT" && (el.type=="checkbox"||el.type=="radio")? "checked": 
+        "none";
+
+    if(choicesType == "multi") { 
+        selectedEl = []; 
+        selectedVal = [];
+        choices = 
+            term=="selected"? $(el).find("option"): 
+            term=="checked"? document.getElementsByName(el.name): 
+            undefined;
+
+        for(i=0; i<choices.length; i++){
+            if( choices[i].selected || choices[i].checked ) {
+                selectedEl.push( choices[i] )
+                selectedVal.push( choices[i].value );
+
+                if( selectedValType == "single" ){
+                    selectedEl = selectedEl[0];
+                    selectedVal = selectedVal[0];
+                    break;
+                }
+            }
+        } 
+    }
+    return {$el:el,$selected:selectedEl,$val:selectedVal,$els:choices}
+}
+//TODO: step interval
+// options:
+// min
+// max
+// flag
+Util.stepCount = function (interval,options) {
 }
 
 
@@ -1213,8 +1301,11 @@ Tab.decodeTabState = function (url) {
     }
 }
 
+// testing
     //todo:horizontal scroll vertical navigation
     // Tab.create = function (config) {
     //
     // }
 
+//from sy
+// from meri inside
