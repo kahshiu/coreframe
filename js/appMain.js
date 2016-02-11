@@ -295,11 +295,11 @@ function Police (config){
     this.targetClassName = config.targetClassName||"";
     this.messageClassName = config.messageClassName||"alert danger";
     this.messageIdPrefix = config.messageIdPrefix||"validate$";
-    this.template = config.template||'<div><div id="{{$data.messageId}}" class="{{$data.messageClassName}}"></div></div>';
+    this.template = config.template||'<div id="{{$data.messageId}}" class="{{$data.messageClassName}}"></div>';
 
     this.overallClassName = config.overallClassName||"alert danger";
     this.overallIdPrefix = config.overallIdPrefix||"overall$";
-    this.overallTemplate = '<div><div id="{{$data.overallId}}" class="{{$data.overallClassName}}"></div></div>';
+    this.overallTemplate = '<div id="{{$data.overallId}}" class="{{$data.overallClassName}}"></div>';
 
     this.message = "";
     this.messageBox = [];
@@ -317,7 +317,7 @@ Police.prototype.templateFor = function (rule) {
     messages.isTextDate = "Incorrect date supplied";
     messages.isDateWithin = "Date must be within {{$data.$params.lowerBound? ('min:'+Util.toDateText($data.$params.lowerBound)):''}} {{$data.$params.upperBound? ('max:'+Util.toDateText($data.$params.upperBound)):''}}";
     messages.isCurrency = "Incorrect currency supplied";
-    messages.overall ="Invalid {{$data.$options.$el.name}} fields. Please check."
+    messages.overall ="Invalid form fields. Please check."
 
     return messages[rule] || "";
 }
