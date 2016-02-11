@@ -334,7 +334,7 @@ Police.prototype.enforce = function (rule,$message,$options) {
     this.cleaned = temp.hasOwnProperty("cleaned")?temp.cleaned: this.cleaned;
 
     if (!this.isValid) {
-        if(this.cleaned) $options.$el.value = this.cleaned;
+        if(this.cleaned) $options.$el.value = this.cleaned; //TODO: have fn to implement clean for array of options
         temp = Templater.compileTemplate($message,{ $options:$options, $params:rule.params });
         this.appendMessage(temp);
         this.messageBox.push(temp);
