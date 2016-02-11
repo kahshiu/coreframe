@@ -19,4 +19,4 @@ CSS
 - modified Bijou CSS framework
 
 Project branches that utilises coreframe:
-- [https://github.com/kahshiu/meri-inside] (meri-inside)
+- [meri-inside] (https://github.com/kahshiu/meri-inside)
