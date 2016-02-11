@@ -1214,7 +1214,6 @@ Tab.decodeTabState = function (url) {
 }
 
 // testing
-// another testing here
     //todo:horizontal scroll vertical navigation
     // Tab.create = function (config) {
     //
