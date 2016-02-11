@@ -1,13 +1,22 @@
 # Core Framework
-An experimental application written in Coldfusion (CF), Lucee server.  
-  
-CF Framework:  
-This project sticks close to CF's original framework, while taking inspiration from good old Fusebox and FW/1, favouring naming convention over configuration.
-  
-Front end:  
-HTML: Favours the use of full form submission instead of Ajax  
-CSS: Draws from Bijou CSS minimalist framework  
-JS: JQuery, Underscore.js
-  
-Update:  
-Project currently merged in Merimen training pages until core application services (CF, CSS, JS) stabilises to branch into another repo.
+Core Services for Rapid Application Development. Written in Coldfusion (CF) for Lucee Server, Javascript (JS) and Cascading Style Sheet (CSS)
+
+CF
+- Routing mechanism draws inspiration heavily from Fusebox
+- (TODO) Proper error handling, error logger
+- (TODO) Authentication mechanism
+
+HTML
+- favours form submission instead of ajax
+
+JS
+- templating 
+- configurable vertical navigation bar
+- configurable breadcrumbs
+- dependencies (JQuery, underscore)
+
+CSS
+- modified Bijou CSS framework
+
+Project branches that utilises coreframe:
+- meri-inside
