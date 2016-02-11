@@ -452,6 +452,14 @@ Police.prototype.form = function (el) {
         overallEl.innerHTML = this.templateFor("overall");
     }
 }
+// TODO: implement API
+//disable element
+Police.prototype.disable = function (els,flag) {
+    // els
+    // el.disabled = el;
+
+    return this;
+}
 // Police: implement validation form elements
 // args:
 // el: HTML element
