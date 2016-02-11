@@ -265,8 +265,15 @@ Validate.isNumWithin = function (val,param) {
 }
 // TODO:added support for array
 Validate.isOption = function (val,param) {
-    var result = {passed:false, cleaned:['4','1','2']};
+    console.log(val,param)
+    param = param || {};
+    param.validateFn = Validate.isFunction(param.validateFn).passed? param.validateFn: function (val) {return true;}
+    param.cleanFn = Validate.isFunction(param.cleanFn).passed? param.cleanFn: function (val) {return val;}
+    var result = {passed:param.validateFn(val), cleaned:param.cleanFn(val)};
     return result;
+}
+function x (val) {
+    return !Validate.isUndefined(_.has(val,'1'))
 }
 
 // validate: isStringWithin
@@ -394,12 +401,16 @@ Police.prototype.writeCleaned = function (options,params) {
 
     if( options.$els ) {
         // form control: select OR (input checkbox/ radio)
-        if(options.$el.nodeName=="SELECT") { term = "selected";
-        } else { term = "checked";
+        if(options.$el.nodeName=="SELECT") { 
+            term = "selected";
+        } else { 
+            term = "checked";
         }
         for( i=0;i<options.$els.length;i++ ) { 
             if( this.cleaned.indexOf(options.$els[i].value)>-1 ) {
                 options.$els[i].setAttribute(term,"");
+            } else {
+                options.$els[i].removeAttribute(term);
             }
         }
     } else {
