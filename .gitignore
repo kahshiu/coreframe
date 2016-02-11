@@ -1,0 +1,8 @@
+/WEB-INF
+/assets
+*.*swp
+*.*sw*
+*.*~
+/js/knockout*
+/js/vue*
+/css/form*

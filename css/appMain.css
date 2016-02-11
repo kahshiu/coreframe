@@ -1,0 +1,111 @@
+.navPlaceHolder {
+    position:absolute;
+}
+.navPlaceHolder ul {
+    position: relative; top:0em; right:0em;
+    width:10em;
+    list-style:none;
+}
+.navPlaceHolder li {
+    padding-left: 1em;
+}
+.navPlaceHolder li>ul{
+    display:none
+}
+.navPlaceHolder li.expanded>ul{
+    display:block
+}      
+
+.tabs span{
+    padding: 0.5em;
+}
+.tabs span.selected {
+    border-style:solid;
+    border-color:#DDD #DDD #FFF #DDD;
+    border-width:2px;
+    background:#FFF
+}
+.tabs {
+    border-bottom:2px solid #DDD;
+}
+.tabpages>div {
+    display:none;
+    margin:1em 0em;
+}
+.tabpages>div.selected {
+    display:block;
+}   
+
+.datePickerHost {
+    position: relative;
+    width: 4em
+}
+.datePicker {
+    background-color: #3F51B5;
+    position: absolute;
+    width: 18em;
+    padding-left: 1em;
+    padding-bottom: 1em;
+    top: 2em; 
+    left: 0em; 
+    z-index: 100;
+}
+.datePicker td {
+    width:3em;
+    text-align:center
+}
+.datePicker .nudgeContainer{
+    margin-top: 1em;
+    margin-right: 1em;
+    float: left;
+}
+.datePicker .nudger, .datePicker tbody td{
+    cursor: pointer; 
+    cursor: hand;
+}
+.datePicker .dpPrev, 
+.datePicker .dpNext{ 
+    background-color:#303F95;
+    color:white;
+    opacity:0.54;
+}
+.datePicker .year,
+.datePicker th{
+    color:white;
+    opacity:0.87;
+}
+.datePicker .dpCurr{
+    background-color:#C5CAE9;
+    opacity:0.87;
+}
+.datePicker td.today {
+    background-color:#FF4081;
+    font-weight:bold;
+}       
+
+.divider {
+    width:100%; 
+    background:#CCC; 
+    height:2px; 
+    margin:25px 0px;
+}
+.pointer {
+    cursor:pointer
+}
+.interactive:hover{
+    background-color:#DDD
+}
+
+.bold { font-weight:bold; }
+.uline { text-decoration:underline; }
+.monospaced { font-family:Lucida Console, Monaco, monospace }
+
+form label {
+    display:block;
+}
+
+.error,
+form select, 
+form input {
+    padding:4px;
+}
