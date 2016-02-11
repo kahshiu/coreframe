@@ -20,6 +20,10 @@
         <cfmodule template="/auth/login.cfm">
     </cffunction>
 
+    <cffunction access="public" name="login_act" returntype="any" output="true">
+        <cfmodule template="/auth/login_act.cfm">
+    </cffunction>
+
     <cffunction access="public" name="warning" returntype="any" output="true">
         <cfmodule template="/auth/warning.cfm">
     </cffunction>

@@ -17,16 +17,23 @@ this is the billboard
     </div>
 <div id="testappend">
 </div>
-<script>
-$(document.getElementById("testappend")).append("<span>testin</span>")
-</script>
   <label>
     <div>Email address</div>
     <input type="email" placeholder="Email address" tabindex="1"></label></form>
 
 <form class="form-horizontal" id=f1>
-    <input type="button" id="tttt" validate="alert($value)" onclick="validate(this)" value="Submit form">
-<input type="text" id="xxx" class="DP" validate='static$CHECK.using($options).enforce("isRequired","{{$data.$el.id}} is not required").enforce("isEarlier","{{$data.el.id}} is earlier than ").render()' onblur="Validate.element(this)">
+    <input type="button" id="tttt" class="submit asdf" validate="alert('ad')" onclick="static$Police.form(this.parentNode)" value="Submit form">
+<div>
+<input type="text" id="xxx" class="DP" validate='static$Police.using($options).enforce({name:"isTextDate"}).enforce({name:"isDateWithin",params:{lowerBound:"12/12/2012",upperBound:"12/12/2015",onUpperBound:false}}).render()' onblur="static$Police.element(this)">
+</div>
+
+<div>
+    <select id="sel" name="sel" multiple validate='static$Police.using($options).enforce({name:"isRequired"}).render()' onchange="static$Police.element(this)">
+        <option value=1> 1</option>
+        <option value=2> 2</option>
+        <option value=3> 3</option>
+    </select>
+</div>
 
 </form>
 
