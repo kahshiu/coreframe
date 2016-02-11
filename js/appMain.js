@@ -1,4 +1,215 @@
-1G0|
+/******** Templater ********/
+var Templater = Templater || {};
+Templater.getPlaceholders = function (template,config) {
+    var config = config||{};
+    config.interpolation = config.interpolation||["{{","}}"];
+
+    var sumLength = config.interpolation.join("").length;
+    var placeholders = [];
+    var expressions = [];
+    var stopper1 = 0;
+    var stopper2 = 0;
+
+    while(template.length>0) {
+        stopper1 = template.search(config.interpolation[0]);
+        stopper2 = template.search(config.interpolation[1])+config.interpolation[1].length;
+
+        if(stopper1 == -1 || stopper2 == -2) break;;
+        if(stopper1>stopper2) throw "Templater.getPlaceholders: Imbalanced interpolation signs";
+
+        if( !(config.setting == 'strict' && stopper2-stopper1 == sumLength) ){
+            placeholders.push(template.slice(stopper1,stopper2))
+            expressions.push(
+                template.slice(
+                    stopper1+config.interpolation[0].length
+                    ,stopper2-config.interpolation[1].length
+                )
+            );
+        }
+        template = template.slice(stopper2);
+    }
+    return { brac:placeholders,expr:expressions };
+}
+Templater.compileTemplate = function (template,$data,$index,$parent,$root){
+    var i=0;
+    var j=0;
+    var hldr,frag="";
+    var expr,expr0,expr1,expr1curr,expr1fn,expr1param1,expr1param2,expr1param3,expr1param4,expr1param5;
+
+    //if(_.isArray($data)) {
+    if(Object.prototype.toString.call( $data ) === '[object Array]') {
+        for(j=0;j<$data.length;j++){
+            if($root === undefined) $root = $data;
+            frag = frag + Templater.compileTemplate(template,$data[j],j,$parent,$root);
+        }
+    }else{
+        hldr = Templater.getPlaceholders(template,{keys:true})
+        frag = template.slice(0)
+        $root = $root||$data
+        for(i=0;i<hldr.brac.length;i++){
+            expr = hldr.expr[i].split("|");
+            expr0 = expr[0];
+            expr1 = expr[1];
+
+// evaluate expression
+            val = (new Function(
+                "$data"
+                ,"$index"
+                ,"$parent"
+                ,"$root"
+                ,'var result={{expr}};if(result===undefined || result===null) {result=""}; return result'.replace("{{expr}}",expr0)
+            ))( $data,$index,$parent,$root );
+
+// evaluate fn on expression
+            if(expr1) {
+                expr1 = expr1.split(",")
+                for(m=0;m<expr1.length;m++){
+                    expr1fn = expr1[m];
+                    expr1param1 = val;
+                    expr1param2 = $data;
+                    expr1param3 = $index;
+                    expr1param4 = $parent;
+                    expr1param5 = $root;
+                    val = (new Function (
+                        "$val"
+                        ,"$data"
+                        ,"$index"
+                        ,"$parent"
+                        ,"$root"
+                        ,'var result=window.{{expr}}($val,$data,$index,$parent,$root);if(result===undefined || result===null) {result=""}; return result'.replace("{{expr}}",expr1fn)
+                    ))( expr1param1,expr1param2,expr1param3,expr1param4,expr1param5 );
+                }
+            }
+            frag = frag.replace(hldr.brac[i],val);
+        }
+    }
+    return frag;
+}          
+Templater.compileEach = function (arr){
+    var i, total = "";
+    for(i=0; i<arr.length; i++){
+        total = total + Templater.compileTemplate(arr[i].TEMPLATE, arr[i].DATA);
+    }
+    return total;
+}
+
+/******** Validate ********/
+// all validate functions should respect argument signature/ returns as below
+// args:
+// -- args1: value in question, 
+// -- args2: optional params
+// return: 
+// -- passed: boolean result of validation,
+// -- cleaned (optional): cleaned input after validation,
+// -- etc: options
+var Validate = Validate || {}
+
+// validate: isData
+// params: type: [Array,Boolean,Date,Function,Null,Number,Object,RegExp,String,Undefined]
+Validate.isData = function (val,param) {
+    param = param || {}
+    if( Validate.isEmpty(param.type).passed ) throw "Validate.isData: param.type must be supplied";
+    var flag = Util.getType(val)===param.type;
+    return { passed: flag, cleaned:flag?val:"" }
+}
+// helper functions of isData
+Validate.isBoolean   = function (val) { return Validate.isData(val,{type:"Boolean"}) }
+Validate.isNumber    = function (val) { return Validate.isData(val,{type:"Number"}) }
+Validate.isString    = function (val) { return Validate.isData(val,{type:"String"}) }
+Validate.isUndefined = function (val) { return Validate.isData(val,{type:"Undefined"}) }
+Validate.isNull      = function (val) { return Validate.isData(val,{type:"Null"}) }
+Validate.isFunction  = function (val) { return Validate.isData(val,{type:"Function"}) }
+Validate.isDate      = function (val) { return Validate.isData(val,{type:"Date"}) }
+Validate.isRegExp    = function (val) { return Validate.isData(val,{type:"RegExp"}) }
+Validate.isArray     = function (val) { return Validate.isData(val,{type:"Array"}) }
+Validate.isObject    = function (val) { return Validate.isData(val,{type:"Object"}) }
+Validate.isNumable   = function (val) { return { passed: !isNaN(+val) }; }
+Validate.isEmpty     = function (val) { return { passed: val===undefined || val===null || val==="" }; }
+Validate.isRequired  = function (val) { return { passed: Validate.isNumber(val).passed || (Validate.isString(val).passed && val.length>0) }; }
+
+// validate: isPattern
+// param: regex, flags
+Validate.isPattern = function (val,params) {
+    params = params || {};
+    params.flags = params.flags || "";
+
+    if( Validate.isEmpty(val).passed || Validate.isEmpty(params.regex).passed ) return { passed:false, cleaned:"" };
+    var flag = new RegExp(params.regex, params.flags).test(val);
+    return { passed:flag, cleaned:flag?val:"" }
+}
+// validate: isTextDate
+// param: regex
+Validate.isTextDate = function (val,params) {
+    params = params || {}
+    params.regex = params.regex|| "\\d{1,2}[/-\\s]\\d{1,2}[/-\\s]\\d{4}";
+
+    if( Validate.isEmpty(val).passed ) return { passed:false, cleaned:"" };
+    return Validate.isPattern(val,params)
+}
+// validate: isDateWithin
+// param: 
+// -- regex for date,
+// -- format for both lower/upper [dd/mm/yyyy],
+// -- datepart [dd],
+// -- lowerBound,upperBound,
+// -- onLowerBound [true],onUpperBound [true]
+// -- clean [String,Date]
+// returns:
+// -- { passed, cleaned } 
+Validate.isDateWithin = function (val,params) {
+    params = params || {};
+    params.clean = params.clean || "String";
+    params.onUpperBound = Validate.isEmpty(params.onUpperBound).passed?true: params.onUpperBound;
+    params.onLowerBound = Validate.isEmpty(params.onLowerBound).passed?true: params.onLowerBound;
+
+    var compare = {}, result = {}, temp, cleaned = {};
+    compare.lower = true;
+    compare.upper = true;
+
+    if( !Validate.isTextDate(val,{regex:params.regex}).passed 
+            || params.upperBound?!Validate.isTextDate(params.upperBound,{regex:params.regex}).passed: true 
+            || params.upperBound?!Validate.isTextDate(params.lowerBound,{regex:params.regex}).passed: true
+            ) return { passed:false, cleaned:"" };
+
+    val = Util.toDateObj(val);
+    params.upperBound = Util.toDateObj(params.upperBound);
+    params.lowerBound = Util.toDateObj(params.lowerBound);
+    if(!params.onUpperBound) params.upperBound.setDate(params.upperBound.getDate()-1);
+    if(!params.onLowerBound) params.lowerBound.setDate(params.lowerBound.getDate()+1);
+
+    if(params.upperBound) {
+        temp = Util.dateCompare(params.datepart,val,params.upperBound)
+        compare.upper = temp>=0;
+        val = Util.setDateMin(params.datepart,val,params.upperBound,params.format);
+    }
+    if(params.lowerBound) {
+        temp = Util.dateCompare(params.datepart,params.lowerBound,val)
+        compare.lower = temp>=0;
+        val = Util.setDateMax(params.datepart,val,params.lowerBound,params.format);
+    }
+    result.passed = compare.lower && compare.upper;
+    result.cleaned = 
+        params.clean=="Date"?val: 
+        params.clean=="String"?Util.toDateText(val,params.format): "";
+    return result;
+}
+// validate: isCurrency
+// params:
+// -- regex:Array/regex
+// -- clean:[String,Number]
+// returns:
+// -- { passed, cleaned (String ONLY) }
+Validate.isCurrency = function (val,params) {
+    val = val.toString()
+    params = params || {}
+    params.regex = params.regex || [ 
+            /^(?:(?:\d{1,3}(?:\,\d{3})*)|(?:\d+))(?:\.\d*)?$/
+            ,/(^0$)|^(?:0\.(?:\d*)|(?:\.\d*))$/
+        ]; 
+    params.clean = params.clean || "String";
+
+    var i,result = {},temp;
+    result.passed = false;
 
     if(Validate.isRegExp(params.regex).passed) params.regex = [params.regex];
 
