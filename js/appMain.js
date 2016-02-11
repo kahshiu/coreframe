@@ -101,7 +101,6 @@ Templater.compileEach = function (arr){
 // return: 
 // -- passed: boolean result of validation,
 // -- cleaned (optional): cleaned input after validation,
-// -- etc: options
 var Validate = Validate || {}
 
 // validate: isData
@@ -137,6 +136,13 @@ Validate.isPattern = function (val,params) {
     var flag = new RegExp(params.regex, params.flags).test(val);
     return { passed:flag, cleaned:flag?val:"" }
 }
+
+// TODO: implement API
+Validate.isEmail = function (val,params) {}
+Validate.isPhone = function (val,params) {}
+// password complexity
+Validate.isComplexity = function (val,params) {}
+
 // validate: isTextDate
 // param: regex
 Validate.isTextDate = function (val,params) {
@@ -225,27 +231,46 @@ Validate.isCurrency = function (val,params) {
     }
     return result;
 }
-// generate functions to validate elements
-//generate obj with array of elements to hold result
-// validation object
+// validate: isNumWithin
+// params:
+// -- onMinNum
+// -- onMaxNum
+// -- minNum
+// -- maxNum
+// returns: passed, cleaned (Number ONLY)
+Validate.isNumWithin = function (val,param) {
+    var result = {passed:false, cleaned:'0'}
+        ,temp = Validate.isCurrency(val,{clean:"Number"});
+    if( !temp.passed ) return result;
 
-//Validator.
-//required
-//min
-//max
-//minlength
-//max
-//range no
-//range date
-//pattern
-//email
-//phone
-//number (without symbols?)
-//digits only
-//step
-//dependency on other fields
-//password complexity
-//unique constrain/ across fields
+    param.onMinNum = Validate.isEmpty(param.onMinNum).passed?true: param.onMinNum;
+    param.onMaxNum = Validate.isEmpty(param.onMaxNum).passed?true: param.onMaxNum;
+    param.minNum = param.onMinNum?param.minNum: (param.minNum+1);
+    param.maxNum = param.onMaxNum?param.maxNum: (param.maxNum-1);
+
+    result.passed = (param.minNum? (val>=param.minNum):true);
+    result.passed = (param.maxNum? (val<=param.maxNum):true) && result.passed;
+    result.cleaned = Util.setBounds(val,param.minNum,param.maxNum);
+    return result;
+}
+// validate: isStringWithin
+// params:
+// -- minLength
+// -- maxLength
+// returns: passed, cleaned (String ONLY)
+Validate.isStringWithin = function (val,param) {
+    var result = {passed:false,cleaned:val}; 
+    param.minLength = param.minLength?param.minLength:0;
+    param.maxLength = param.maxLength?param.maxLength:255;
+    result.passed = val.length > param.minLength;
+    result.passed = (val.length < param.maxLength) && result.passed;
+    result.cleaned = val.substring(0,param.maxLength);
+    return result;
+}
+
+// generate functions to validate elements
+// generate obj with array of elements to hold result
+// validation object
 
 /******** Police **********/
 function Police (config){
@@ -380,6 +405,14 @@ Police.prototype.form = function (el) {
         overallEl.innerHTML = this.templateFor("overall");
     }
 }
+// TODO: implement API
+//disable element
+Police.prototype.disable = function (els,flag) {
+    // els
+    // el.disabled = el;
+
+    return this;
+}
 // Police: implement validation form elements
 // args:
 // el: HTML element
@@ -461,6 +494,10 @@ Police.prototype.render = function ($template,$data) {
     }
     return this; 
 }
+// TODO: think about
+//dependency on other fields
+//unique constrain/ across fields
+
 /******** Utilities ********/
 var Util = Util || {}
 
@@ -830,6 +867,13 @@ Util.setTextDateMin = function (datepart,dateText1,dateText2,format) {
     d1 = Util.toDateObj(dateText1,format);
     d2 = Util.toDateObj(dateText2,format);
     return Util.toDateText( Util.setDateMin(datepart,d1,d2) );
+}
+//TODO: step interval
+// options:
+// min
+// max
+// flag
+Util.stepCount = function (interval,options) {
 }
 
 
